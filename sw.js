@@ -1,7 +1,7 @@
 const CACHE_NAME = 'bingo-ride-v1';
 const ASSETS = [
-  './director.html',
-  './bingo-format.js',
+  './index.html',
+  '../bingo-format.js',
   './manifest.json',
   'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner.min.js',
