@@ -649,11 +649,15 @@ document.getElementById('manualSubmit').addEventListener('click', ()=>{
 
 renderAll();
 
-if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('./sw.js').catch(()=>{});
-  });
-}
+// Service worker registration is intentionally disabled during development —
+// it was causing browsers to keep serving stale cached versions after updates.
+// We'll re-enable this as one of the last steps before the actual ride:
+//
+// if('serviceWorker' in navigator){
+//   window.addEventListener('load', ()=>{
+//     navigator.serviceWorker.register('./sw.js').catch(()=>{});
+//   });
+// }
 </script>
 </body>
 </html>
