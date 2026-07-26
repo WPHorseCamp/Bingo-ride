@@ -6,7 +6,6 @@
 <title>Bingo Ride — Director</title>
 <link rel="manifest" href="manifest.json">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
@@ -236,6 +235,7 @@
 
 <script type="module">
 import * as BingoFormat from '../bingo-format.js';
+import QrScanner from 'https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner.min.js';
 
 const STORE_KEY = 'bingoRideDirector_v1';
 function defaultState(){
