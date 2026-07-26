@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bingo Ride — Director</title>
+<link rel="manifest" href="manifest.json">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner.min.js"></script>
+<style>
+  :root{
+    --pine:#1f3a2e;
+    --pine-dark:#132720;
+    --paper:#f6f2e8;
+    --tan:#c89b6d;
+    --barn:#8c3b2e;
+    --barn-dark:#6e2e22;
+    --ink:#2a2621;
+    --line:#d8cdb8;
+    --ok:#3f6b4a;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Inter',system-ui,sans-serif; background:var(--paper); color:var(--ink);
+  }
+  h1,h2,h3{font-family:'Roboto Slab',Georgia,serif; margin:0 0 .4em;}
+  header.top{
+    background:var(--pine); color:var(--paper); padding:18px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+  header.top h1{font-size:1.4rem; letter-spacing:.02em; margin:0; color:#fff;}
+  header.top .tag{font-size:.75rem; color:var(--tan); text-transform:uppercase; letter-spacing:.12em;}
+  nav.tabs{display:flex; gap:0; background:var(--pine-dark);}
+  nav.tabs button{
+    flex:1; padding:14px 10px; background:none; border:none; color:#cfd8d1; font-size:.95rem; font-weight:600;
+    cursor:pointer; border-bottom:3px solid transparent; font-family:inherit;
+  }
+  nav.tabs button.active{color:#fff; border-bottom-color:var(--barn); background:rgba(255,255,255,.04);}
+  main{max-width:920px; margin:0 auto; padding:24px 18px 60px;}
+  section.panel{display:none;}
+  section.panel.active{display:block;}
+  .card{
+    background:#fff; border:1px solid var(--line); border-radius:6px; padding:20px; margin-bottom:18px;
+  }
+  label{display:block; font-size:.85rem; font-weight:600; margin-bottom:4px; color:var(--pine-dark);}
+  input[type=text], input[type=number], select{
+    width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:4px; font-size:1rem; margin-bottom:14px; font-family:inherit;
+  }
+  button.primary{
+    background:var(--barn); color:#fff; border:none; padding:12px 22px; border-radius:4px; font-size:1rem; font-weight:700;
+    cursor:pointer; font-family:inherit;
+  }
+  button.primary:hover{background:var(--barn-dark);}
+  button.secondary{
+    background:none; border:1px solid var(--pine); color:var(--pine); padding:10px 18px; border-radius:4px; font-weight:600; cursor:pointer; font-family:inherit;
+  }
+  button:disabled{opacity:.45; cursor:not-allowed;}
+  table{width:100%; border-collapse:collapse; font-size:.9rem;}
+  th,td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line);}
+  th{color:var(--pine-dark); text-transform:uppercase; font-size:.72rem; letter-spacing:.06em;}
+  .qr-wrap{display:flex; justify-content:center; padding:16px; background:#fff;}
+  .pill{display:inline-block; padding:2px 9px; border-radius:20px; font-size:.72rem; font-weight:700; background:var(--pine); color:#fff;}
+  .muted{color:#726a5c; font-size:.85rem;}
+  .row{display:flex; gap:14px; flex-wrap:wrap;}
+  .row > div{flex:1; min-width:160px;}
+  .station-sheet{
+    border:3px solid var(--pine); border-radius:10px; padding:26px; margin-bottom:24px; text-align:center; background:#fff;
+    page-break-after:always;
+  }
+  .station-sheet h2{font-size:2.6rem; color:var(--pine); margin-bottom:2px;}
+  .station-sheet .sub{color:var(--barn); font-weight:700; letter-spacing:.15em; text-transform:uppercase; font-size:.85rem; margin-bottom:18px;}
+  .calls{display:flex; justify-content:center; gap:14px; flex-wrap:wrap; margin-bottom:20px;}
+  .calls span{
+    display:inline-block; min-width:64px; padding:10px 6px; border:2px solid var(--tan); border-radius:8px;
+    font-family:'Roboto Slab',Georgia,serif; font-size:1.3rem; font-weight:700; color:var(--pine-dark);
+  }
+  .station-sheet .qr-wrap{display:flex; justify-content:center;}
+  @media print{
+    header.top, nav.tabs, .no-print{display:none !important;}
+    body{background:#fff;}
+    main{padding:0; max-width:none;}
+    section.panel{display:none !important;}
+    section.panel.printing{display:block !important;}
+    .station-sheet{margin:0; page-break-after:always;}
+  }
+  #video-wrap{position:relative; max-width:420px; margin:0 auto 14px;}
+  video{width:100%; border-radius:8px; border:2px solid var(--pine);}
+  .leaderboard-row.top{background:#fff7e6;}
+  .warn{background:#fdecea; border:1px solid #e0a39b; color:#7a2b22; padding:10px 14px; border-radius:6px; font-size:.88rem; margin-bottom:14px;}
+  .ok-box{background:#eaf3ec; border:1px solid #a9c9b2; color:#234; padding:10px 14px; border-radius:6px; font-size:.88rem; margin-bottom:14px;}
+  .bcard{display:inline-grid; grid-template-columns:repeat(5,42px); gap:3px; margin:10px auto;}
+  .bcard div{
+    width:42px; height:42px; display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--line); font-size:.8rem; font-weight:700; border-radius:3px; background:#fbf8f2;
+  }
+  .bcard div.marked{background:var(--ok); color:#fff; border-color:var(--ok);}
+  .letters{display:grid; grid-template-columns:repeat(5,42px); gap:3px; margin:0 auto; justify-content:center;}
+  .letters div{width:42px; text-align:center; font-family:'Roboto Slab',Georgia,serif; color:var(--barn); font-weight:700;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div>
+    <h1>Bingo Ride — Director</h1>
+    <div class="tag">Sign-in · Stations · Finish Line</div>
+  </div>
+  <button class="secondary no-print" id="resetBtn">Reset ride data</button>
+</header>
+
+<nav class="tabs no-print">
+  <button data-tab="signin" class="active">Sign-In</button>
+  <button data-tab="stations">Stations</button>
+  <button data-tab="finish">Finish Line</button>
+</nav>
+
+<main>
+
+  <!-- ============ SIGN-IN ============ -->
+  <section class="panel active" id="panel-signin">
+    <div class="card">
+      <h2>Issue a rider's cards</h2>
+      <div class="row">
+        <div>
+          <label>Rider name</label>
+          <input type="text" id="riderName" placeholder="Sarah Jones">
+        </div>
+        <div>
+          <label>Number of cards (1–3)</label>
+          <select id="cardCount">
+            <option value="1">1 card — $5</option>
+            <option value="2">2 cards — $10</option>
+            <option value="3">3 cards — $15</option>
+          </select>
+        </div>
+      </div>
+      <button class="primary" id="issueBtn">Issue cards &amp; generate QR</button>
+      <p class="muted" id="issueHint">Card numbers are drawn at random and guaranteed unique for the whole ride.</p>
+    </div>
+
+    <div class="card" id="issuedCard" style="display:none;">
+      <h3 id="issuedTitle"></h3>
+      <div class="qr-wrap"><div id="issueQR"></div></div>
+      <p class="muted" style="text-align:center;">Rider scans this once with the Rider App to load her card(s).</p>
+    </div>
+
+    <div class="card">
+      <h3>Roster</h3>
+      <table id="rosterTable">
+        <thead><tr><th>Rider</th><th>Cards</th><th>Paid</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="muted" id="rosterEmpty">No riders signed in yet.</p>
+    </div>
+  </section>
+
+  <!-- ============ STATIONS ============ -->
+  <section class="panel" id="panel-stations">
+    <div class="card no-print">
+      <h2>Trail station signs</h2>
+      <p class="muted">Generates 6 stations with 36 unique, non-repeating calls spread evenly across B-I-N-G-O. Generate once per ride — regenerating after cards are issued will invalidate the game.</p>
+      <div id="stationWarn"></div>
+      <button class="primary" id="genStationsBtn">Generate 6 stations</button>
+      <button class="secondary" id="printStationsBtn" style="display:none;">Print all station signs</button>
+    </div>
+    <div id="stationSheets"></div>
+  </section>
+
+  <!-- ============ FINISH LINE ============ -->
+  <section class="panel" id="panel-finish">
+    <div class="card no-print">
+      <h2>Scan a rider's finish code</h2>
+      <div id="video-wrap">
+        <video id="finishVideo" muted playsinline></video>
+      </div>
+      <div style="text-align:center;">
+        <button class="secondary" id="toggleScanBtn">Start camera</button>
+      </div>
+      <details style="margin-top:14px;">
+        <summary class="muted">Manual entry (camera unavailable)</summary>
+        <div class="row" style="margin-top:10px;">
+          <div>
+            <label>Card ID</label>
+            <select id="manualCardId"></select>
+          </div>
+        </div>
+        <label>Stations visited</label>
+        <div class="row" id="manualStations"></div>
+        <button class="secondary" id="manualSubmit">Add result</button>
+      </details>
+    </div>
+
+    <div class="card" id="lastScanCard" style="display:none;">
+      <h3 id="lastScanTitle"></h3>
+      <div class="bcard-wrap" style="text-align:center;">
+        <div class="letters"><div>B</div><div>I</div><div>N</div><div>G</div><div>O</div></div>
+        <div class="bcard" id="lastScanGrid"></div>
+      </div>
+      <p class="muted" id="lastScanCount" style="text-align:center;"></p>
+    </div>
+
+    <div class="card">
+      <h3>Leaderboard</h3>
+      <p class="muted" id="winnerTierNote"></p>
+      <table>
+        <thead><tr><th>#</th><th>Rider</th><th>Card</th><th>Filled</th><th>Pattern</th></tr></thead>
+        <tbody id="leaderboardBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+</main>
+
+<script type="module">
+import * as BingoFormat from './bingo-format.js';
+
+const STORE_KEY = 'bingoRideDirector_v1';
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return { cards:{}, roster:[], stations:null, nextCardIndex:1, results:[] };
+}
+function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+let state = loadState();
+
+// ---------- tabs ----------
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('section.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  if(confirm('This clears all riders, cards, stations, and results for a fresh ride. Continue?')){
+    state = { cards:{}, roster:[], stations:null, nextCardIndex:1, results:[] };
+    saveState();
+    renderRoster(); renderStations(); renderLeaderboard();
+    document.getElementById('issuedCard').style.display='none';
+  }
+});
+
+// ---------- SIGN-IN ----------
+function renderRoster(){
+  const tbody = document.querySelector('#rosterTable tbody');
+  tbody.innerHTML='';
+  document.getElementById('rosterEmpty').style.display = state.roster.length? 'none':'block';
+  state.roster.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${r.name}</td><td>${r.cardIds.join(', ')}</td><td>$${r.paid}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('issueBtn').addEventListener('click', ()=>{
+  const name = document.getElementById('riderName').value.trim();
+  const count = parseInt(document.getElementById('cardCount').value,10);
+  if(!name){ alert('Enter the rider\'s name.'); return; }
+
+  const cards = BingoFormat.generateUniqueCards(count, state.nextCardIndex);
+  state.nextCardIndex += count;
+  cards.forEach(c => state.cards[c.id] = c);
+  state.roster.push({ name, cardIds: cards.map(c=>c.id), paid: count*5 });
+  saveState();
+  renderRoster();
+
+  const payload = BingoFormat.encodeIssuance(name, cards);
+  document.getElementById('issuedTitle').textContent = `${name} — ${count} card${count>1?'s':''} ($${count*5})`;
+  const qrEl = document.getElementById('issueQR');
+  qrEl.innerHTML='';
+  new QRCode(qrEl, { text: payload, width:220, height:220, correctLevel: QRCode.CorrectLevel.M });
+  document.getElementById('issuedCard').style.display='block';
+
+  document.getElementById('riderName').value='';
+});
+
+renderRoster();
+
+// ---------- STATIONS ----------
+function renderStations(){
+  const wrap = document.getElementById('stationSheets');
+  wrap.innerHTML='';
+  const warn = document.getElementById('stationWarn');
+  const printBtn = document.getElementById('printStationsBtn');
+  if(!state.stations){
+    warn.innerHTML='';
+    printBtn.style.display='none';
+    return;
+  }
+  if(state.roster.length){
+    warn.innerHTML = `<div class="warn">Stations already exist and riders are signed in — regenerating will break this ride's game.</div>`;
+  } else {
+    warn.innerHTML='';
+  }
+  printBtn.style.display='inline-block';
+  state.stations.forEach(st=>{
+    const payload = BingoFormat.encodeStation(st);
+    const div = document.createElement('div');
+    div.className='station-sheet';
+    div.innerHTML = `
+      <h2>Station ${st.station}</h2>
+      <div class="sub">Bingo Ride Call Sheet</div>
+      <div class="calls">${st.calls.map(c=>`<span>${c.letter}${String(c.num).padStart(2,'0')}</span>`).join('')}</div>
+      <div class="qr-wrap"><div class="qrcell"></div></div>
+    `;
+    wrap.appendChild(div);
+    new QRCode(div.querySelector('.qrcell'), { text: payload, width:200, height:200, correctLevel: QRCode.CorrectLevel.M });
+  });
+}
+
+document.getElementById('genStationsBtn').addEventListener('click', ()=>{
+  if(state.stations && !confirm('Stations already exist. Regenerate and invalidate the current game?')) return;
+  state.stations = BingoFormat.generateStations(6,6);
+  saveState();
+  renderStations();
+});
+
+document.getElementById('printStationsBtn').addEventListener('click', ()=>{
+  document.getElementById('panel-stations').classList.add('printing');
+  window.print();
+  setTimeout(()=>document.getElementById('panel-stations').classList.remove('printing'), 500);
+});
+
+renderStations();
+
+// ---------- FINISH LINE ----------
+let scanner = null;
+let scanning = false;
+
+document.getElementById('toggleScanBtn').addEventListener('click', async ()=>{
+  const btn = document.getElementById('toggleScanBtn');
+  if(!scanning){
+    if(!state.stations){ alert('Generate stations first.'); return; }
+    const video = document.getElementById('finishVideo');
+    QrScanner.WORKER_PATH = 'https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner-worker.min.js';
+    scanner = new QrScanner(video, result => handleScan(result.data || result), { returnDetailedScanResult:true, highlightScanRegion:true });
+    try{
+      await scanner.start();
+      scanning = true;
+      btn.textContent = 'Stop camera';
+    }catch(e){
+      alert('Camera unavailable: '+e.message+'. Use manual entry below instead.');
+    }
+  } else {
+    scanner.stop();
+    scanning = false;
+    btn.textContent = 'Start camera';
+  }
+});
+
+function handleScan(payload){
+  try{
+    const fin = BingoFormat.decodeFinish(payload);
+    recordFinish(fin.riderName, fin.cardIds, fin.visitedStations);
+  }catch(e){
+    console.warn('Not a valid finish QR', e);
+  }
+}
+
+function recordFinish(riderName, cardIds, visitedStations){
+  cardIds.forEach(cardId=>{
+    const card = state.cards[cardId];
+    if(!card){ console.warn('Unknown card', cardId); return; }
+    const { grid, filledCount } = BingoFormat.markCard(card, visitedStations, state.stations);
+    // replace any prior result for this card with the latest scan
+    state.results = state.results.filter(r=>r.cardId!==cardId);
+    state.results.push({ riderName, cardId, grid, filledCount });
+    showLastScan(riderName, cardId, grid, filledCount);
+  });
+  saveState();
+  renderLeaderboard();
+}
+
+function showLastScan(riderName, cardId, grid, filledCount){
+  document.getElementById('lastScanCard').style.display='block';
+  document.getElementById('lastScanTitle').textContent = `${riderName} — ${cardId}`;
+  const gridEl = document.getElementById('lastScanGrid');
+  gridEl.innerHTML='';
+  grid.forEach(row=>{
+    row.forEach(marked=>{
+      const d = document.createElement('div');
+      if(marked) d.classList.add('marked');
+      gridEl.appendChild(d);
+    });
+  });
+  document.getElementById('lastScanCount').textContent = `${filledCount} / 25 squares filled`;
+}
+
+function renderLeaderboard(){
+  const body = document.getElementById('leaderboardBody');
+  body.innerHTML='';
+  const sorted = [...state.results].sort((a,b)=>b.filledCount-a.filledCount);
+  const winners = state.results.length ? BingoFormat.determineWinner(state.results) : [];
+  const winnerIds = new Set(winners.map(w=>w.cardId));
+
+  let tierLabel = '—';
+  if(winners.length){
+    const p = BingoFormat.checkPatterns(winners[0].grid);
+    if(p.blackout) tierLabel='Blackout';
+    else if(p.fourCornersPlusTwoLines) tierLabel='Four corners + 2 lines';
+    else if(p.fourCorners) tierLabel='Four corners';
+    else if(p.anyLine) tierLabel='Any line';
+    else tierLabel='Most squares filled (no pattern yet)';
+  }
+  document.getElementById('winnerTierNote').textContent = state.results.length
+    ? `Current leading tier: ${tierLabel}${winners.length>1?' — TIE, flag for manual club decision':''}`
+    : 'No finish-line scans yet.';
+
+  sorted.forEach((r,i)=>{
+    const tr = document.createElement('tr');
+    if(winnerIds.has(r.cardId)) tr.classList.add('leaderboard-row','top');
+    const p = BingoFormat.checkPatterns(r.grid);
+    const patternStr = p.blackout ? 'Blackout' : p.fourCorners ? 'Four corners' : p.anyLine ? 'Line' : '—';
+    tr.innerHTML = `<td>${i+1}</td><td>${r.riderName}</td><td>${r.cardId}</td><td>${r.filledCount}/25</td><td>${patternStr}</td>`;
+    body.appendChild(tr);
+  });
+}
+
+// ---------- manual entry fallback ----------
+function refreshManualUI(){
+  const sel = document.getElementById('manualCardId');
+  sel.innerHTML = '<option value="">Select a card…</option>';
+  state.roster.forEach(r=>{
+    r.cardIds.forEach(id=>{
+      const opt = document.createElement('option');
+      opt.value = JSON.stringify({name:r.name, id});
+      opt.textContent = `${id} — ${r.name}`;
+      sel.appendChild(opt);
+    });
+  });
+  const stWrap = document.getElementById('manualStations');
+  stWrap.innerHTML='';
+  for(let s=1;s<=6;s++){
+    const lbl = document.createElement('label');
+    lbl.style.fontWeight='400';
+    lbl.innerHTML = `<input type="checkbox" value="${s}" style="width:auto;margin-right:4px;"> Station ${s}`;
+    stWrap.appendChild(lbl);
+  }
+}
+document.getElementById('manualSubmit').addEventListener('click', ()=>{
+  const sel = document.getElementById('manualCardId');
+  if(!sel.value){ alert('Select a card.'); return; }
+  const { name, id } = JSON.parse(sel.value);
+  const visited = [...document.querySelectorAll('#manualStations input:checked')].map(cb=>parseInt(cb.value,10));
+  recordFinish(name, [id], visited);
+});
+
+refreshManualUI();
+renderLeaderboard();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
