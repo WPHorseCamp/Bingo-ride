@@ -235,7 +235,6 @@
 
 <script type="module">
 import * as BingoFormat from '../bingo-format.js';
-import QrScanner from 'https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner.min.js';
 
 const STORE_KEY = 'bingoRideDirector_v1';
 function defaultState(){
@@ -500,6 +499,7 @@ document.getElementById('pdfStationsBtn').addEventListener('click', ()=>{
 // ---------- FINISH LINE ----------
 let scanner = null;
 let scanning = false;
+let QrScannerLib = null;
 
 function showCameraError(msg){
   const el = document.getElementById('cameraError');
@@ -522,17 +522,22 @@ document.getElementById('toggleScanBtn').addEventListener('click', async ()=>{
   if(!state.stations){ alert('Generate stations first.'); return; }
 
   try{
+    if(!QrScannerLib){
+      const mod = await import('https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner.min.js');
+      QrScannerLib = mod.default;
+    }
+
     // qr-scanner needs its worker script served same-origin. Fetching it and
     // wrapping it in a blob: URL satisfies that without us having to host a copy.
-    if(!QrScanner.WORKER_PATH || !QrScanner.WORKER_PATH.startsWith('blob:')){
+    if(!QrScannerLib.WORKER_PATH || !QrScannerLib.WORKER_PATH.startsWith('blob:')){
       const workerResp = await fetch('https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner-worker.min.js');
       if(!workerResp.ok) throw new Error('Could not fetch the scanner worker script (are you online for this first load?)');
       const workerBlob = await workerResp.blob();
-      QrScanner.WORKER_PATH = URL.createObjectURL(workerBlob);
+      QrScannerLib.WORKER_PATH = URL.createObjectURL(workerBlob);
     }
 
     const video = document.getElementById('finishVideo');
-    scanner = new QrScanner(
+    scanner = new QrScannerLib(
       video,
       result => handleScan(result.data || result),
       { returnDetailedScanResult:true, highlightScanRegion:true }
