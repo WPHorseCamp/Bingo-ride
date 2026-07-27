@@ -194,6 +194,10 @@
       <div style="text-align:center;">
         <button class="secondary" id="toggleScanBtn">Start camera</button>
       </div>
+      <div style="text-align:center; margin-top:10px; display:none;" id="cameraPickerWrap">
+        <label style="display:inline; margin-right:6px;">Camera:</label>
+        <select id="cameraSelect" style="width:auto; display:inline-block; margin-bottom:0;"></select>
+      </div>
       <div id="cameraError" class="warn" style="display:none; margin-top:12px;"></div>
       <details style="margin-top:14px;">
         <summary class="muted">Manual entry (camera unavailable)</summary>
@@ -500,6 +504,7 @@ document.getElementById('pdfStationsBtn').addEventListener('click', ()=>{
 let scanner = null;
 let scanning = false;
 let QrScannerLib = null;
+const CAMERA_PREF_KEY = 'bingoRideDirector_preferredCamera';
 
 function showCameraError(msg){
   const el = document.getElementById('cameraError');
@@ -508,12 +513,39 @@ function showCameraError(msg){
   el.textContent = msg;
 }
 
+async function populateCameraPicker(){
+  const wrap = document.getElementById('cameraPickerWrap');
+  const sel = document.getElementById('cameraSelect');
+  try{
+    const cameras = await QrScannerLib.listCameras(true); // true = request labels
+    if(!cameras.length){ wrap.style.display='none'; return; }
+
+    const saved = localStorage.getItem(CAMERA_PREF_KEY);
+    sel.innerHTML = cameras.map(c=>`<option value="${c.id}">${c.label || 'Camera'}</option>`).join('');
+    if(saved && cameras.some(c=>c.id===saved)) sel.value = saved;
+    wrap.style.display = 'block';
+  }catch(e){
+    console.warn('Could not list cameras', e);
+    wrap.style.display='none';
+  }
+}
+
+document.getElementById('cameraSelect').addEventListener('change', async (e)=>{
+  localStorage.setItem(CAMERA_PREF_KEY, e.target.value);
+  if(scanner && scanning){
+    try{ await scanner.setCamera(e.target.value); }
+    catch(err){ showCameraError('Could not switch camera: ' + err.message); }
+  }
+});
+
 document.getElementById('toggleScanBtn').addEventListener('click', async ()=>{
   const btn = document.getElementById('toggleScanBtn');
   showCameraError(null);
 
   if(scanning){
-    scanner && scanner.stop();
+    // destroy() (not just stop()) removes the scan-region highlight overlay
+    // and fully releases the camera; we always build a fresh instance next time.
+    if(scanner){ scanner.destroy(); scanner = null; }
     scanning = false;
     btn.textContent = 'Start camera';
     return;
@@ -537,14 +569,20 @@ document.getElementById('toggleScanBtn').addEventListener('click', async ()=>{
     }
 
     const video = document.getElementById('finishVideo');
+    const savedCamera = localStorage.getItem(CAMERA_PREF_KEY);
     scanner = new QrScannerLib(
       video,
       result => handleScan(result.data || result),
-      { returnDetailedScanResult:true, highlightScanRegion:true }
+      {
+        returnDetailedScanResult:true,
+        highlightScanRegion:true,
+        preferredCamera: savedCamera || 'environment'
+      }
     );
     await scanner.start();
     scanning = true;
     btn.textContent = 'Stop camera';
+    await populateCameraPicker();
   }catch(err){
     console.error('Camera start failed', err);
     showCameraError('Camera failed to start: ' + (err && err.message ? err.message : err) + '. Use manual entry below instead.');
