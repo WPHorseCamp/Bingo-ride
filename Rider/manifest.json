@@ -1,0 +1,9 @@
+{
+  "name": "Bingo Ride Rider",
+  "short_name": "BR Rider",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f6f2e8",
+  "theme_color": "#1f3a2e",
+  "icons": []
+}
