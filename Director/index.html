@@ -71,6 +71,7 @@
   button:disabled{opacity:.45; cursor:not-allowed;}
   table{width:100%; border-collapse:collapse; font-size:.9rem;}
   th,td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line);}
+  tbody tr:hover{background:#f5f0e4;}
   th{color:var(--pine-dark); text-transform:uppercase; font-size:.72rem; letter-spacing:.06em;}
   .qr-wrap{display:flex; justify-content:center; padding:16px; background:#fff;}
   .pill{display:inline-block; padding:2px 9px; border-radius:20px; font-size:.72rem; font-weight:700; background:var(--pine); color:#fff;}
@@ -234,6 +235,7 @@
         <div class="bcard" id="lastScanGrid"></div>
       </div>
       <p class="muted" id="lastScanCount" style="text-align:center;"></p>
+      <p class="muted" style="text-align:center;">Tip: click any row in the leaderboard below to compare that rider's card here.</p>
     </div>
 
     <div class="card">
@@ -397,13 +399,30 @@ function renderAll(){
 }
 
 // ---------- SIGN-IN ----------
+function showIssuedQR(name, cards, paid){
+  const payload = BingoFormat.encodeIssuance(name, cards);
+  document.getElementById('issuedTitle').textContent = `${name} — ${cards.length} card${cards.length>1?'s':''}${paid!=null?` ($${paid})`:''}`;
+  const qrEl = document.getElementById('issueQR');
+  qrEl.innerHTML='';
+  new QRCode(qrEl, { text: payload, width:220, height:220, correctLevel: QRCode.CorrectLevel.M });
+  document.getElementById('issuedCard').style.display='block';
+  document.getElementById('issuedCard').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
 function renderRoster(){
   const tbody = document.querySelector('#rosterTable tbody');
   tbody.innerHTML='';
   document.getElementById('rosterEmpty').style.display = state.roster.length? 'none':'block';
   state.roster.forEach(r=>{
     const tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.title = "Click to show this rider's QR code again";
     tr.innerHTML = `<td>${r.name}</td><td>${r.cardIds.join(', ')}</td><td>$${r.paid}</td>`;
+    tr.addEventListener('click', ()=>{
+      const cards = r.cardIds.map(id=>state.cards[id]).filter(Boolean);
+      if(!cards.length){ alert('Could not find this rider\'s cards.'); return; }
+      showIssuedQR(r.name, cards, r.paid);
+    });
     tbody.appendChild(tr);
   });
 }
@@ -416,17 +435,13 @@ document.getElementById('issueBtn').addEventListener('click', ()=>{
   const cards = BingoFormat.generateUniqueCards(count, state.nextCardIndex);
   state.nextCardIndex += count;
   cards.forEach(c => state.cards[c.id] = c);
-  state.roster.push({ name, cardIds: cards.map(c=>c.id), paid: count*5 });
+  const paid = count*5;
+  state.roster.push({ name, cardIds: cards.map(c=>c.id), paid });
   saveState();
   renderRoster();
   refreshManualUI();
 
-  const payload = BingoFormat.encodeIssuance(name, cards);
-  document.getElementById('issuedTitle').textContent = `${name} — ${count} card${count>1?'s':''} ($${count*5})`;
-  const qrEl = document.getElementById('issueQR');
-  qrEl.innerHTML='';
-  new QRCode(qrEl, { text: payload, width:220, height:220, correctLevel: QRCode.CorrectLevel.M });
-  document.getElementById('issuedCard').style.display='block';
+  showIssuedQR(name, cards, paid);
 
   document.getElementById('riderName').value='';
 });
@@ -702,6 +717,18 @@ function showLastScan(riderName, results){
   renderLastScanGrid();
 }
 
+function showCardFromLeaderboard(riderName, cardId){
+  const riderResults = state.results.filter(r=>r.riderName===riderName);
+  if(!riderResults.length) return;
+  lastScanResults = riderResults;
+  lastScanActiveIndex = Math.max(0, riderResults.findIndex(r=>r.cardId===cardId));
+  document.getElementById('lastScanCard').style.display='block';
+  document.getElementById('lastScanTitle').textContent = riderName;
+  renderLastScanTabs();
+  renderLastScanGrid();
+  document.getElementById('lastScanCard').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
 function renderLastScanTabs(){
   const tabsEl = document.getElementById('lastScanTabs');
   tabsEl.innerHTML='';
@@ -813,10 +840,13 @@ function renderLeaderboard(){
   sorted.forEach((r,i)=>{
     const tr = document.createElement('tr');
     if(winnerIds.has(r.cardId)) tr.classList.add('leaderboard-row','top');
+    tr.style.cursor = 'pointer';
+    tr.title = "Click to view this rider's card above";
     const matched = BingoFormat.matchedPatterns(r.grid).filter(k=>state.winCriteria.includes(k));
     const best = state.winCriteria.find(k=>matched.includes(k));
     const patternStr = best ? BingoFormat.PATTERNS[best].name : '—';
     tr.innerHTML = `<td>${i+1}</td><td>${r.riderName}</td><td>${r.cardId}</td><td>${r.filledCount}/25</td><td>${patternStr}</td>`;
+    tr.addEventListener('click', ()=>showCardFromLeaderboard(r.riderName, r.cardId));
     body.appendChild(tr);
   });
 }
