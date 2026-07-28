@@ -96,7 +96,7 @@
 
 <header class="top">
   <h1>Bingo Ride</h1>
-  <div class="tag">Rider</div>
+  <div class="tag" id="headerTag">Rider</div>
 </header>
 
 <main>
@@ -415,11 +415,16 @@ function showFinishForRider(idx){
   document.getElementById('finishPicker').style.display = 'none';
   document.getElementById('finishQRSection').style.display = 'block';
   document.getElementById('backToPickerBtn').style.display = state.riders.length > 1 ? 'block' : 'none';
+  document.getElementById('headerTag').textContent = 'RIDER ' + rider.riderName.toUpperCase();
 }
 
 document.getElementById('showFinishBtn').addEventListener('click', openFinishView);
-document.getElementById('backToPickerBtn').addEventListener('click', showFinishPicker);
+document.getElementById('backToPickerBtn').addEventListener('click', ()=>{
+  document.getElementById('headerTag').textContent = 'Rider';
+  showFinishPicker();
+});
 document.getElementById('closeFinishBtn').addEventListener('click', ()=>{
+  document.getElementById('headerTag').textContent = 'Rider';
   document.getElementById('finishView').style.display = 'none';
   renderAll();
 });

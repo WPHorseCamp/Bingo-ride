@@ -309,6 +309,23 @@ export const PATTERNS = {
   letterF:           { name: 'Letter "F"', mask: combineMasks(fullCol(0), fullRow(0), fullRow(2)) },
   numeral1:          { name: "#1", mask: fullCol(2) },
   checkerboard:      { name: "Checkerboard", mask: maskFromCells((()=>{const c=[];for(let r=0;r<5;r++)for(let col=0;col<5;col++)if((r+col)%2===0)c.push([r,col]);return c;})()) },
+  diagonalTLBR:      { name: "Diagonal (top-left to bottom-right)", mask: maskFromCells([[0,0],[1,1],[2,2],[3,3],[4,4]]) },
+  diagonalTRBL:      { name: "Diagonal (top-right to bottom-left)", mask: maskFromCells([[0,4],[1,3],[2,2],[3,1],[4,0]]) },
+  topV:              { name: 'Top "V" (upside down V)', mask: maskFromCells([[0,0],[1,1],[0,4],[1,3]]) },
+  bottomV:           { name: 'Bottom "V"', mask: maskFromCells([[2,0],[3,1],[2,4],[3,3],[4,2]]) },
+  anyTwoLines:       { name: "Any Two Lines", kind: "anyTwoLines" },
+  letterN:           { name: 'Letter "N"', mask: combineMasks(fullCol(0), fullCol(4), maskFromCells([[0,0],[1,1],[2,2],[3,3],[4,4]])) },
+  letterM:           { name: 'Letter "M"', mask: combineMasks(fullCol(0), fullCol(4), maskFromCells([[1,1],[1,3]])) },
+  letterW:           { name: 'Letter "W"', mask: combineMasks(fullCol(0), fullCol(4), maskFromCells([[3,1],[3,3]])) },
+  letterK:           { name: 'Letter "K"', mask: combineMasks(fullCol(0), maskFromCells([[0,4],[1,3],[3,3],[4,4]])) },
+  letterP:           { name: 'Letter "P"', mask: combineMasks(fullCol(0), fullRow(0), maskFromCells([[1,4],[2,4]])) },
+  letterZ:           { name: 'Letter "Z"', mask: combineMasks(fullRow(0), fullRow(4), maskFromCells([[0,4],[1,3],[2,2],[3,1],[4,0]])) },
+  letterS:           { name: 'Letter "S"', mask: combineMasks(fullRow(0), fullRow(2), fullRow(4), maskFromCells([[1,0],[3,4]])) },
+  letterO:           { name: 'Letter "O"', mask: combineMasks(fullRow(0), fullRow(4), fullCol(0), fullCol(4)) },
+  letterG:           { name: 'Letter "G"', mask: combineMasks(fullCol(0), fullRow(0), fullRow(4), maskFromCells([[2,3],[2,4],[3,4]])) },
+  letterB:           { name: 'Letter "B"', mask: combineMasks(fullCol(0), fullRow(0), fullRow(2), fullRow(4), maskFromCells([[1,3],[3,3]])) },
+  letterD:           { name: 'Letter "D"', mask: combineMasks(fullCol(0), maskFromCells([[0,1],[0,2],[0,3],[4,1],[4,2],[4,3],[1,4],[2,4],[3,4]])) },
+  letterJ:           { name: 'Letter "J"', mask: combineMasks(fullRow(0), fullCol(3), maskFromCells([[4,0],[4,1],[4,2]])) },
 };
 
 /** Does this grid satisfy the given pattern key? */
@@ -326,6 +343,14 @@ export function matchesPattern(grid, patternKey) {
   if (def.kind === "anyThreeCorners") {
     const corners = [grid[0][0], grid[0][4], grid[4][0], grid[4][4]];
     return corners.filter(Boolean).length >= 3;
+  }
+  if (def.kind === "anyTwoLines") {
+    let count = 0;
+    for (let r=0;r<5;r++) if (grid[r].every(Boolean)) count++;
+    for (let c=0;c<5;c++) if (grid.every(row=>row[c])) count++;
+    if ([0,1,2,3,4].every(i=>grid[i][i])) count++;
+    if ([0,1,2,3,4].every(i=>grid[i][4-i])) count++;
+    return count >= 2;
   }
   // fixed mask
   for (let r=0;r<5;r++) for (let c=0;c<5;c++) if (def.mask[r][c] && !grid[r][c]) return false;
