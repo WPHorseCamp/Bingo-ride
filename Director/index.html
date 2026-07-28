@@ -206,6 +206,7 @@
       <div style="text-align:center;">
         <button class="secondary" id="toggleScanBtn">Start camera</button>
       </div>
+      <div id="scanConfirm" class="ok-box" style="display:none; text-align:center; font-weight:700; margin-top:12px;"></div>
       <div style="text-align:center; margin-top:10px; display:none;" id="cameraPickerWrap">
         <label style="display:inline; margin-right:6px;">Camera:</label>
         <select id="cameraSelect" style="width:auto; display:inline-block; margin-bottom:0;"></select>
@@ -390,6 +391,7 @@ function renderAll(){
   renderLeaderboard();
   document.getElementById('issuedCard').style.display='none';
   document.getElementById('lastScanCard').style.display='none';
+  document.getElementById('scanConfirm').style.display='none';
   lastScanResults = [];
   refreshManualUI();
 }
@@ -562,6 +564,15 @@ function showCameraError(msg){
   el.textContent = msg;
 }
 
+let scanConfirmTimeout = null;
+function showScanConfirm(msg){
+  const el = document.getElementById('scanConfirm');
+  el.style.display = 'block';
+  el.textContent = msg;
+  clearTimeout(scanConfirmTimeout);
+  scanConfirmTimeout = setTimeout(()=>{ el.style.display='none'; }, 4000);
+}
+
 async function populateCameraPicker(){
   const wrap = document.getElementById('cameraPickerWrap');
   const sel = document.getElementById('cameraSelect');
@@ -673,6 +684,7 @@ function recordFinish(riderName, cardIds, visitedStations){
     saveState();
     if(riderResults.length){
       showLastScan(riderName, riderResults);
+      showScanConfirm(`✓ Got ${riderName}! (${riderResults.length} card${riderResults.length>1?'s':''})`);
     }
     renderLeaderboard();
   }catch(e){
@@ -771,10 +783,21 @@ document.getElementById('addPatternBtn').addEventListener('click', ()=>{
   renderLeaderboard();
 });
 
+function bestTierIndex(grid){
+  for(let i=0;i<state.winCriteria.length;i++){
+    if(BingoFormat.matchesPattern(grid, state.winCriteria[i])) return i;
+  }
+  return state.winCriteria.length; // matches nothing on the list — lowest priority tier
+}
+
 function renderLeaderboard(){
   const body = document.getElementById('leaderboardBody');
   body.innerHTML='';
-  const sorted = [...state.results].sort((a,b)=>b.filledCount-a.filledCount);
+  const sorted = [...state.results].sort((a,b)=>{
+    const ta = bestTierIndex(a.grid), tb = bestTierIndex(b.grid);
+    if(ta !== tb) return ta - tb;
+    return b.filledCount - a.filledCount;
+  });
 
   if(!state.results.length){
     document.getElementById('winnerTierNote').textContent = 'No finish-line scans yet.';
