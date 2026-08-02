@@ -277,10 +277,10 @@ const FOUR_CORNERS = maskFromCells([[0,0],[0,4],[4,0],[4,4]]);
 
 export const PATTERNS = {
   blackout:          { name: "Blackout / Coverall", mask: manhattanFilled(4) },
-  anyLine:           { name: "Any Line (row, column, or diagonal)", kind: "anyLine" },
-  bingoAnyWay:       { name: "Bingo Any Way", kind: "anyLine" },
+  anyLine:           { name: "Any Line (row, column, or diagonal)", kind: "anyLine", displayMask: fullRow(2) },
+  bingoAnyWay:       { name: "Bingo Any Way", kind: "anyLine", displayMask: fullRow(2) },
   fourCorners:       { name: "Four Corners", mask: FOUR_CORNERS },
-  anyThreeCorners:   { name: "Any Three Corners", kind: "anyThreeCorners" },
+  anyThreeCorners:   { name: "Any Three Corners", kind: "anyThreeCorners", displayMask: maskFromCells([[0,0],[0,4],[4,0]]) },
   line1:             { name: "Line 1 (top row)", mask: fullRow(0) },
   line2:             { name: "Line 2", mask: fullRow(1) },
   line3:             { name: "Line 3 (middle row)", mask: fullRow(2) },
@@ -313,7 +313,7 @@ export const PATTERNS = {
   diagonalTRBL:      { name: "Diagonal (top-right to bottom-left)", mask: maskFromCells([[0,4],[1,3],[2,2],[3,1],[4,0]]) },
   topV:              { name: 'Top "V" (upside down V)', mask: maskFromCells([[0,0],[1,1],[0,4],[1,3]]) },
   bottomV:           { name: 'Bottom "V"', mask: maskFromCells([[2,0],[3,1],[2,4],[3,3],[4,2]]) },
-  anyTwoLines:       { name: "Any Two Lines", kind: "anyTwoLines" },
+  anyTwoLines:       { name: "Any Two Lines", kind: "anyTwoLines", displayMask: combineMasks(fullRow(0), fullRow(4)) },
   letterN:           { name: 'Letter "N"', mask: combineMasks(fullCol(0), fullCol(4), maskFromCells([[0,0],[1,1],[2,2],[3,3],[4,4]])) },
   letterM:           { name: 'Letter "M"', mask: combineMasks(fullCol(0), fullCol(4), maskFromCells([[1,1],[1,3]])) },
   letterW:           { name: 'Letter "W"', mask: combineMasks(fullCol(0), fullCol(4), maskFromCells([[3,1],[3,3]])) },
@@ -328,9 +328,291 @@ export const PATTERNS = {
   letterJ:           { name: 'Letter "J"', mask: combineMasks(fullRow(0), fullCol(3), maskFromCells([[4,0],[4,1],[4,2]])) },
 };
 
+/**
+ * Custom club patterns (e.g. equestrian-themed) live here, separate from the
+ * standard library above, so new ones can be added without touching the core
+ * pattern definitions. Each entry: key -> { name, mask }.
+ * Fill this in as patterns are provided — see parseTextPattern() below for a
+ * quick way to turn an "X" / "." grid into a mask.
+ */
+export const CUSTOM_PATTERNS = {
+  barn: { name: "Barn", mask: parseTextPattern([
+    "..X..",
+    ".X.X.",
+    "XX.XX",
+    ".X.X.",
+    ".X.X.",
+  ]) },
+  bit1: { name: "Bit 1", mask: parseTextPattern([
+    ".X.X.",
+    ".X.X.",
+    ".X.X.",
+    "XXXXX",
+    ".X.X.",
+  ]) },
+  bit2: { name: "Bit 2", mask: parseTextPattern([
+    ".X.X.",
+    "XXXXX",
+    ".X.X.",
+    ".X.X.",
+    ".X.X.",
+  ]) },
+  bootSpur1: { name: "Boot & Spur", mask: parseTextPattern([
+    "..XX.",
+    "..XX.",
+    "..XX.",
+    ".XXXX",
+    "XXXX.",
+  ]) },
+  bootSpur2: { name: "Boot & Spur 2", mask: parseTextPattern([
+    ".XX..",
+    ".XX..",
+    ".XX..",
+    "XXXX.",
+    ".XXXX",
+  ]) },
+  brush1: { name: "Brush", mask: parseTextPattern([
+    ".....",
+    ".....",
+    "XXXXX",
+    "XXXXX",
+    "X.X.X",
+  ]) },
+  brush2: { name: "Brush 2", mask: parseTextPattern([
+    "X.X.X",
+    "XXXXX",
+    "XXXXX",
+    ".....",
+    ".....",
+  ]) },
+  buckedOff1: { name: "Bucked Off 1", mask: parseTextPattern([
+    "X..X.",
+    ".X.X.",
+    "..XXX",
+    ".X.X.",
+    "X..X.",
+  ]) },
+  buckedOff2: { name: "Bucked Off 2", mask: parseTextPattern([
+    "X...X",
+    ".X.X.",
+    "..X..",
+    "XXXXX",
+    "..X..",
+  ]) },
+  buckedOff3: { name: "Bucked Off 3", mask: parseTextPattern([
+    ".X..X",
+    ".X.X.",
+    "XXX..",
+    ".X.X.",
+    ".X..X",
+  ]) },
+  buckedOff4: { name: "Bucked Off 4", mask: parseTextPattern([
+    "..X..",
+    "XXXXX",
+    "..X..",
+    ".X.X.",
+    "X...X",
+  ]) },
+  dog1: { name: "Dog", mask: parseTextPattern([
+    "...XX",
+    "...XX",
+    "XXXX.",
+    ".X.X.",
+    "X..X.",
+  ]) },
+  dog2: { name: "Dog 2", mask: parseTextPattern([
+    "XX...",
+    "XX..X",
+    ".XXX.",
+    ".X.X.",
+    ".X..X",
+  ]) },
+  flyMask: { name: "Fly Mask", mask: parseTextPattern([
+    "X...X",
+    ".XXX.",
+    ".X.X.",
+    "..X..",
+    "..X..",
+  ]) },
+  grainBucket: { name: "Grain Bucket", mask: parseTextPattern([
+    ".XXX.",
+    "X...X",
+    "XXXXX",
+    "XXXXX",
+    ".XXX.",
+  ]) },
+  hayBale1: { name: "Hay Bale 1", mask: parseTextPattern([
+    "..XX.",
+    "..XX.",
+    "..XX.",
+    "..XX.",
+    ".....",
+  ]) },
+  hayBale2: { name: "Hay Bale 2", mask: parseTextPattern([
+    ".XX..",
+    ".XX..",
+    ".XX..",
+    ".XX..",
+    ".....",
+  ]) },
+  hayBale3: { name: "Hay Bale 3", mask: parseTextPattern([
+    ".....",
+    ".....",
+    "XXXX.",
+    "XXXX.",
+    ".....",
+  ]) },
+  hayBale4: { name: "Hay Bale 4", mask: parseTextPattern([
+    ".....",
+    "XXXX.",
+    "XXXX.",
+    ".....",
+    ".....",
+  ]) },
+  hoofPick1: { name: "Hoof Pick", mask: parseTextPattern([
+    "XXXXX",
+    "XXX..",
+    "..X..",
+    "..X..",
+    "..X..",
+  ]) },
+  hoofPick2: { name: "Hoof Pick 2", mask: parseTextPattern([
+    "XXXXX",
+    "..XXX",
+    "..X..",
+    "..X..",
+    "..X..",
+  ]) },
+  horseBlanket: { name: "Horse Blanket", mask: parseTextPattern([
+    "XXXXX",
+    "X...X",
+    "X...X",
+    "X...X",
+    "XXXXX",
+  ]) },
+  horseHead1: { name: "Horse Head", mask: parseTextPattern([
+    ".X...",
+    "XXX..",
+    "XXXX.",
+    "XXXXX",
+    "X..XX",
+  ]) },
+  horseHead2: { name: "Horse Head 2", mask: parseTextPattern([
+    "...X.",
+    "..XXX",
+    ".XXXX",
+    "XXXXX",
+    "XX..X",
+  ]) },
+  horseShoe1: { name: "Horse Shoe", mask: parseTextPattern([
+    ".XXX.",
+    "X...X",
+    "X...X",
+    "X...X",
+    "X...X",
+  ]) },
+  horseShoe2: { name: "Horse Shoe 2", mask: parseTextPattern([
+    "X...X",
+    "X...X",
+    "X...X",
+    "X...X",
+    ".XXX.",
+  ]) },
+  shoeNails: { name: "Shoe Nails", mask: parseTextPattern([
+    "..XXX",
+    "...X.",
+    "X..X.",
+    "XXXXX",
+    "X..X.",
+  ]) },
+  money: { name: "Money", mask: parseTextPattern([
+    ".XXXX",
+    "X.X..",
+    ".XXX.",
+    "..X.X",
+    "XXXX.",
+  ]) },
+  pitchfork1: { name: "Pitchfork", mask: parseTextPattern([
+    "..X..",
+    "..X..",
+    "XXXXX",
+    "X.X.X",
+    "X.X.X",
+  ]) },
+  pitchfork2: { name: "Pitchfork 2", mask: parseTextPattern([
+    "..XXX",
+    "..X..",
+    "XXXXX",
+    "..X..",
+    "..XXX",
+  ]) },
+  pitchfork3: { name: "Pitchfork 3", mask: parseTextPattern([
+    "XXX..",
+    "..X..",
+    "XXXXX",
+    "..X..",
+    "XXX..",
+  ]) },
+  pitchfork4: { name: "Pitchfork 4", mask: parseTextPattern([
+    "X.X.X",
+    "X.X.X",
+    "XXXXX",
+    "..X..",
+    "..X..",
+  ]) },
+  saddle1: { name: "Saddle", mask: parseTextPattern([
+    "...X.",
+    "XXXXX",
+    "XXXXX",
+    ".XXX.",
+    ".....",
+  ]) },
+  saddle2: { name: "Saddle 2", mask: parseTextPattern([
+    ".X...",
+    "XXXXX",
+    "XXXXX",
+    ".XXX.",
+    ".....",
+  ]) },
+  stirrup: { name: "Stirrup", mask: parseTextPattern([
+    "..X..",
+    "..X..",
+    ".X.X.",
+    "X...X",
+    "XXXXX",
+  ]) },
+};
+
+/** Merge the standard library with any custom patterns for lookup/display purposes. */
+export function allPatterns() {
+  return { ...PATTERNS, ...CUSTOM_PATTERNS };
+}
+
+/**
+ * Convert a 5-row array of "X"/"." strings into a mask. Row 0 = top of the
+ * card, columns left-to-right = B, I, N, G, O. The center cell's value
+ * doesn't matter — it's always treated as the FREE space.
+ */
+export function parseTextPattern(rows) {
+  const cells = [];
+  rows.forEach((row, r) => {
+    row.split('').forEach((ch, c) => {
+      if (ch === 'X' || ch === 'x') cells.push([r, c]);
+    });
+  });
+  return maskFromCells(cells);
+}
+
+/** The mask used for icon/preview rendering, even for OR-condition patterns. */
+export function getDisplayMask(key) {
+  const def = allPatterns()[key];
+  if (!def) return emptyMask();
+  return def.mask || def.displayMask || emptyMask();
+}
+
 /** Does this grid satisfy the given pattern key? */
 export function matchesPattern(grid, patternKey) {
-  const def = PATTERNS[patternKey];
+  const def = allPatterns()[patternKey];
   if (!def) return false;
 
   if (def.kind === "anyLine") {
@@ -359,7 +641,7 @@ export function matchesPattern(grid, patternKey) {
 
 /** Every pattern key this grid currently satisfies (for display, e.g. "Sarah's card is a Four Corners"). */
 export function matchedPatterns(grid) {
-  return Object.keys(PATTERNS).filter(key => matchesPattern(grid, key));
+  return Object.keys(allPatterns()).filter(key => matchesPattern(grid, key));
 }
 
 /**
@@ -381,7 +663,7 @@ export function determineWinner(entries, priorityKeys) {
     if (matches.length > 0) {
       const maxFilled = Math.max(...matches.map(m => m.filledCount));
       const winners = matches.filter(m => m.filledCount === maxFilled);
-      return { winners, patternKey: key, patternName: PATTERNS[key] ? PATTERNS[key].name : key };
+      return { winners, patternKey: key, patternName: allPatterns()[key] ? allPatterns()[key].name : key };
     }
   }
 
