@@ -51,6 +51,26 @@
   }
   nav.tabs button.active{color:#fff; border-bottom-color:var(--barn); background:rgba(255,255,255,.04);}
   main{max-width:920px; margin:0 auto; padding:24px 18px 60px;}
+  main.wide{max-width:1400px;}
+  .finish-grid{display:grid; grid-template-columns:minmax(340px,1fr) minmax(360px,1.3fr); gap:20px; align-items:start;}
+  @media (max-width:900px){ .finish-grid{grid-template-columns:1fr;} }
+  .pattern-gallery{
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:10px; max-height:70vh; overflow-y:auto; padding-right:4px;
+  }
+  .pattern-tile{
+    background:#fbf8f2; border:1px solid var(--line); border-radius:8px; padding:8px 6px; text-align:center; cursor:pointer; font-family:inherit;
+    display:flex; flex-direction:column; align-items:center; gap:5px; position:relative;
+  }
+  .pattern-tile:hover{border-color:var(--pine); background:#f2ede0;}
+  .pattern-tile.added{opacity:.55;}
+  .pattern-tile .tile-label{font-size:.68rem; font-weight:700; color:var(--pine-dark); line-height:1.15; text-transform:uppercase;}
+  .pattern-tile .tile-check{position:absolute; top:2px; right:4px; color:var(--ok); font-weight:900; font-size:.85rem;}
+  .mini-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:1px; width:44px; height:44px; background:var(--line); border:1px solid var(--line);}
+  .mini-grid div{background:#fff;}
+  .mini-grid div.on{background:var(--barn);}
+  .icon-grid{display:inline-grid; grid-template-columns:repeat(5,1fr); gap:1px; width:20px; height:20px; background:var(--line); vertical-align:middle; margin-right:6px;}
+  .icon-grid div{background:#fff;}
+  .icon-grid div.on{background:var(--barn);}
   section.panel{display:none;}
   section.panel.active{display:block;}
   .card{
@@ -142,7 +162,7 @@
   <button data-tab="finish">Finish Line</button>
 </nav>
 
-<main>
+<main id="mainEl">
 
   <!-- ============ SIGN-IN ============ -->
   <section class="panel active" id="panel-signin">
@@ -199,67 +219,74 @@
 
   <!-- ============ FINISH LINE ============ -->
   <section class="panel" id="panel-finish">
-    <div class="card no-print">
-      <h2>Scan a rider's finish code</h2>
-      <div id="video-wrap">
-        <video id="finishVideo" muted playsinline></video>
-      </div>
-      <div style="text-align:center;">
-        <button class="secondary" id="toggleScanBtn">Start camera</button>
-      </div>
-      <div id="scanConfirm" class="ok-box" style="display:none; text-align:center; font-weight:700; margin-top:12px;"></div>
-      <div style="text-align:center; margin-top:10px; display:none;" id="cameraPickerWrap">
-        <label style="display:inline; margin-right:6px;">Camera:</label>
-        <select id="cameraSelect" style="width:auto; display:inline-block; margin-bottom:0;"></select>
-      </div>
-      <div id="cameraError" class="warn" style="display:none; margin-top:12px;"></div>
-      <details style="margin-top:14px;">
-        <summary class="muted">Manual entry (camera unavailable)</summary>
-        <div class="row" style="margin-top:10px;">
-          <div>
-            <label>Card ID</label>
-            <select id="manualCardId"></select>
+    <div class="finish-grid">
+      <div class="finish-left">
+
+        <div class="card no-print">
+          <h2>Scan a rider's finish code</h2>
+          <div id="video-wrap">
+            <video id="finishVideo" muted playsinline></video>
           </div>
+          <div style="text-align:center;">
+            <button class="secondary" id="toggleScanBtn">Start camera</button>
+          </div>
+          <div id="scanConfirm" class="ok-box" style="display:none; text-align:center; font-weight:700; margin-top:12px;"></div>
+          <div style="text-align:center; margin-top:10px; display:none;" id="cameraPickerWrap">
+            <label style="display:inline; margin-right:6px;">Camera:</label>
+            <select id="cameraSelect" style="width:auto; display:inline-block; margin-bottom:0;"></select>
+          </div>
+          <div id="cameraError" class="warn" style="display:none; margin-top:12px;"></div>
+          <details style="margin-top:14px;">
+            <summary class="muted">Manual entry (camera unavailable)</summary>
+            <div class="row" style="margin-top:10px;">
+              <div>
+                <label>Card ID</label>
+                <select id="manualCardId"></select>
+              </div>
+            </div>
+            <label>Stations visited</label>
+            <div class="row" id="manualStations"></div>
+            <button class="secondary" id="manualSubmit">Add result</button>
+          </details>
         </div>
-        <label>Stations visited</label>
-        <div class="row" id="manualStations"></div>
-        <button class="secondary" id="manualSubmit">Add result</button>
-      </details>
-    </div>
 
-    <div class="card" id="lastScanCard" style="display:none;">
-      <h3 id="lastScanTitle"></h3>
-      <div id="lastScanTabs" style="display:flex; gap:6px; justify-content:center; margin-bottom:10px; flex-wrap:wrap;"></div>
-      <div class="bcard-wrap" style="text-align:center;">
-        <div class="letters"><div>B</div><div>I</div><div>N</div><div>G</div><div>O</div></div>
-        <div class="bcard" id="lastScanGrid"></div>
+        <div class="card" id="lastScanCard" style="display:none;">
+          <h3 id="lastScanTitle"></h3>
+          <div id="lastScanTabs" style="display:flex; gap:6px; justify-content:center; margin-bottom:10px; flex-wrap:wrap;"></div>
+          <div class="bcard-wrap" style="text-align:center;">
+            <div class="letters"><div>B</div><div>I</div><div>N</div><div>G</div><div>O</div></div>
+            <div class="bcard" id="lastScanGrid"></div>
+          </div>
+          <p class="muted" id="lastScanCount" style="text-align:center;"></p>
+          <p class="muted" style="text-align:center;">Tip: click any row in the leaderboard below to compare that rider's card here.</p>
+        </div>
+
+        <div class="card">
+          <h3>Winner criteria</h3>
+          <p class="muted">Click patterns in the gallery to the right to add them here, in priority order. The leaderboard checks each in order and uses the first one anyone has achieved. Change this any time, even mid-ride. "Most squares filled" is always the guaranteed final fallback.</p>
+          <ol id="winCriteriaList" style="padding-left:6px; margin:0 0 6px; list-style:none;"></ol>
+          <p class="muted" id="winCriteriaEmpty">No patterns added — leaderboard will just use most squares filled.</p>
+        </div>
+
+        <div class="card">
+          <h3>Leaderboard</h3>
+          <p class="muted" id="winnerTierNote"></p>
+          <table>
+            <thead><tr><th>#</th><th>Rider</th><th>Card</th><th>Filled</th><th>Pattern</th></tr></thead>
+            <tbody id="leaderboardBody"></tbody>
+          </table>
+        </div>
+
       </div>
-      <p class="muted" id="lastScanCount" style="text-align:center;"></p>
-      <p class="muted" style="text-align:center;">Tip: click any row in the leaderboard below to compare that rider's card here.</p>
-    </div>
 
-    <div class="card">
-      <h3>Winner criteria</h3>
-      <p class="muted">Build your priority list of patterns — the leaderboard checks each in order and uses the first one anyone has achieved. You can change this any time, even mid-ride. "Most squares filled" is always the guaranteed final fallback.</p>
-      <div class="row">
-        <div style="flex:2;">
-          <select id="patternPicker"></select>
-        </div>
-        <div style="flex:1; display:flex; align-items:flex-start;">
-          <button class="secondary" id="addPatternBtn" style="margin-top:0;">Add</button>
+      <div class="finish-right">
+        <div class="card">
+          <h3>Pattern reference</h3>
+          <p class="muted">Click a pattern to add it to the priority list. Patterns already added are checked off.</p>
+          <div id="patternGallery" class="pattern-gallery"></div>
         </div>
       </div>
-      <ol id="winCriteriaList" style="padding-left:20px; margin:0 0 6px;"></ol>
-      <p class="muted" id="winCriteriaEmpty">No patterns added — leaderboard will just use most squares filled.</p>
-    </div>
 
-    <div class="card">
-      <h3>Leaderboard</h3>
-      <p class="muted" id="winnerTierNote"></p>
-      <table>
-        <thead><tr><th>#</th><th>Rider</th><th>Card</th><th>Filled</th><th>Pattern</th></tr></thead>
-        <tbody id="leaderboardBody"></tbody>
-      </table>
     </div>
   </section>
 
@@ -311,6 +338,7 @@ document.querySelectorAll('nav.tabs button').forEach(btn=>{
     document.querySelectorAll('section.panel').forEach(p=>p.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    document.getElementById('mainEl').classList.toggle('wide', btn.dataset.tab==='finish');
   });
 });
 
@@ -762,30 +790,46 @@ function renderLastScanGrid(){
 }
 
 // ---------- WINNER CRITERIA ----------
-function renderWinCriteria(){
-  const picker = document.getElementById('patternPicker');
-  const usedKeys = new Set(state.winCriteria);
-  const available = Object.keys(BingoFormat.PATTERNS).filter(k=>!usedKeys.has(k));
-  picker.innerHTML = available.map(k=>`<option value="${k}">${BingoFormat.PATTERNS[k].name}</option>`).join('');
-  document.getElementById('addPatternBtn').disabled = available.length===0;
+function buildIconGrid(mask, className){
+  const wrap = document.createElement('div');
+  wrap.className = className;
+  for(let r=0;r<5;r++){
+    for(let c=0;c<5;c++){
+      const cell = document.createElement('div');
+      const isFree = r===2 && c===2;
+      if(isFree || (mask && mask[r] && mask[r][c])) cell.classList.add('on');
+      wrap.appendChild(cell);
+    }
+  }
+  return wrap;
+}
 
+function renderWinCriteria(){
   const list = document.getElementById('winCriteriaList');
   list.innerHTML='';
   document.getElementById('winCriteriaEmpty').style.display = state.winCriteria.length ? 'none' : 'block';
+  const all = BingoFormat.allPatterns();
   state.winCriteria.forEach((key,i)=>{
     const li = document.createElement('li');
-    const def = BingoFormat.PATTERNS[key];
-    li.innerHTML = `
-      <span class="pname">${i+1}. ${def ? def.name : key}</span>
-      <button type="button" data-act="up" title="Move up">&uarr;</button>
-      <button type="button" data-act="down" title="Move down">&darr;</button>
-      <button type="button" data-act="remove" title="Remove">&times;</button>
-    `;
-    li.querySelector('[data-act=up]').addEventListener('click', ()=>movePattern(i,-1));
-    li.querySelector('[data-act=down]').addEventListener('click', ()=>movePattern(i,1));
-    li.querySelector('[data-act=remove]').addEventListener('click', ()=>removePattern(i));
+    li.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:6px;';
+    const def = all[key];
+    const iconEl = buildIconGrid(BingoFormat.getDisplayMask(key), 'icon-grid');
+    const span = document.createElement('span');
+    span.className = 'pname';
+    span.textContent = `${i+1}. ${def ? def.name : key}`;
+    li.appendChild(iconEl);
+    li.appendChild(span);
+    ['up','down','remove'].forEach(act=>{
+      const b = document.createElement('button');
+      b.type='button';
+      b.textContent = act==='up' ? '↑' : act==='down' ? '↓' : '×';
+      b.title = act==='up' ? 'Move up' : act==='down' ? 'Move down' : 'Remove';
+      b.addEventListener('click', ()=> act==='remove' ? removePattern(i) : movePattern(i, act==='up'?-1:1));
+      li.appendChild(b);
+    });
     list.appendChild(li);
   });
+  renderPatternGallery();
 }
 function movePattern(i, dir){
   const j = i + dir;
@@ -801,14 +845,40 @@ function removePattern(i){
   renderWinCriteria();
   renderLeaderboard();
 }
-document.getElementById('addPatternBtn').addEventListener('click', ()=>{
-  const key = document.getElementById('patternPicker').value;
+function addPattern(key){
   if(!key || state.winCriteria.includes(key)) return;
   state.winCriteria.push(key);
   saveState();
   renderWinCriteria();
   renderLeaderboard();
-});
+}
+
+function renderPatternGallery(){
+  const gallery = document.getElementById('patternGallery');
+  gallery.innerHTML = '';
+  const all = BingoFormat.allPatterns();
+  Object.keys(all).forEach(key=>{
+    const def = all[key];
+    const added = state.winCriteria.includes(key);
+    const tile = document.createElement('button');
+    tile.type = 'button';
+    tile.className = 'pattern-tile' + (added ? ' added' : '');
+    tile.title = added ? `${def.name} (already added)` : `Add ${def.name}`;
+    if(added){
+      const check = document.createElement('div');
+      check.className = 'tile-check';
+      check.textContent = '✓';
+      tile.appendChild(check);
+    }
+    tile.appendChild(buildIconGrid(BingoFormat.getDisplayMask(key), 'mini-grid'));
+    const label = document.createElement('div');
+    label.className = 'tile-label';
+    label.textContent = def.name;
+    tile.appendChild(label);
+    tile.addEventListener('click', ()=>addPattern(key));
+    gallery.appendChild(tile);
+  });
+}
 
 function bestTierIndex(grid){
   for(let i=0;i<state.winCriteria.length;i++){
@@ -844,7 +914,7 @@ function renderLeaderboard(){
     tr.title = "Click to view this rider's card above";
     const matched = BingoFormat.matchedPatterns(r.grid).filter(k=>state.winCriteria.includes(k));
     const best = state.winCriteria.find(k=>matched.includes(k));
-    const patternStr = best ? BingoFormat.PATTERNS[best].name : '—';
+    const patternStr = best ? BingoFormat.allPatterns()[best].name : '—';
     tr.innerHTML = `<td>${i+1}</td><td>${r.riderName}</td><td>${r.cardId}</td><td>${r.filledCount}/25</td><td>${patternStr}</td>`;
     tr.addEventListener('click', ()=>showCardFromLeaderboard(r.riderName, r.cardId));
     body.appendChild(tr);
