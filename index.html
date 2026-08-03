@@ -2,11 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
-<title>Bingo Ride — Rider</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bingo Ride — Director</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --pine:#1f3a2e;
@@ -23,234 +24,622 @@
   body{
     margin:0; font-family:'Inter',system-ui,sans-serif; background:var(--paper); color:var(--ink);
   }
-  h1,h2,h3{font-family:'Roboto Slab',Georgia,serif; margin:0 0 .3em;}
+  h1,h2,h3{font-family:'Roboto Slab',Georgia,serif; margin:0 0 .4em;}
   header.top{
-    background:var(--pine); color:#fff; padding:16px 18px; text-align:center;
+    background:var(--pine); color:var(--paper); padding:18px 20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;
   }
-  header.top h1{font-size:1.25rem; margin:0;}
-  header.top .tag{font-size:.72rem; color:var(--tan); text-transform:uppercase; letter-spacing:.12em; margin-top:2px;}
-  main{max-width:480px; margin:0 auto; padding:18px 16px 60px;}
+  header.top h1{font-size:1.4rem; letter-spacing:.02em; margin:0; color:#fff;}
+  header.top .tag{font-size:.75rem; color:var(--tan); text-transform:uppercase; letter-spacing:.12em;}
+  .ride-bar{
+    background:var(--pine-dark); color:#e7e2d6; padding:12px 20px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  }
+  .ride-bar input[type=text]{
+    padding:8px 10px; border:1px solid var(--tan); border-radius:4px; font-size:.95rem; font-family:inherit; min-width:240px;
+  }
+  .ride-bar .ride-name{font-weight:700; font-size:1rem;}
+  .ride-bar .ride-date{font-size:.8rem; color:var(--tan);}
+  .ride-bar button{font-family:inherit; cursor:pointer;}
+  .btn-tiny{
+    background:none; border:1px solid var(--tan); color:var(--tan); padding:6px 12px; border-radius:4px; font-size:.8rem; font-weight:600;
+  }
+  .btn-tiny:hover{background:rgba(255,255,255,.08);}
+  .btn-danger{border-color:#d98c7f; color:#f3b3a7;}
+  nav.tabs{display:flex; gap:0; background:var(--pine-dark); border-top:1px solid rgba(255,255,255,.08);}
+  nav.tabs button{
+    flex:1; padding:14px 10px; background:none; border:none; color:#cfd8d1; font-size:.95rem; font-weight:600;
+    cursor:pointer; border-bottom:3px solid transparent; font-family:inherit;
+  }
+  nav.tabs button.active{color:#fff; border-bottom-color:var(--barn); background:rgba(255,255,255,.04);}
+  main{max-width:920px; margin:0 auto; padding:24px 18px 60px;}
+  main.wide{max-width:1400px;}
+  .finish-grid{display:grid; grid-template-columns:minmax(340px,1fr) minmax(360px,1.3fr); gap:20px; align-items:start;}
+  @media (max-width:900px){ .finish-grid{grid-template-columns:1fr;} }
+  .pattern-gallery{
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:10px; max-height:70vh; overflow-y:auto; padding-right:4px;
+  }
+  .pattern-tile{
+    background:#fbf8f2; border:1px solid var(--line); border-radius:8px; padding:8px 6px; text-align:center; cursor:pointer; font-family:inherit;
+    display:flex; flex-direction:column; align-items:center; gap:5px; position:relative;
+  }
+  .pattern-tile:hover{border-color:var(--pine); background:#f2ede0;}
+  .pattern-tile.added{opacity:.55;}
+  .pattern-tile .tile-label{font-size:.68rem; font-weight:700; color:var(--pine-dark); line-height:1.15; text-transform:uppercase;}
+  .pattern-tile .tile-check{position:absolute; top:2px; right:4px; color:var(--ok); font-weight:900; font-size:.85rem;}
+  .mini-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:1px; width:44px; height:44px; background:var(--line); border:1px solid var(--line);}
+  .mini-grid div{background:#fff;}
+  .mini-grid div.on{background:var(--barn);}
+  .icon-grid{display:inline-grid; grid-template-columns:repeat(5,1fr); gap:1px; width:20px; height:20px; background:var(--line); vertical-align:middle; margin-right:6px;}
+  .icon-grid div{background:#fff;}
+  .icon-grid div.on{background:var(--barn);}
+  section.panel{display:none;}
+  section.panel.active{display:block;}
   .card{
-    background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px; margin-bottom:16px;
-    box-shadow:0 1px 3px rgba(0,0,0,.05);
+    background:#fff; border:1px solid var(--line); border-radius:6px; padding:20px; margin-bottom:18px;
   }
-  p{line-height:1.5;}
-  .muted{color:#726a5c; font-size:.85rem;}
-  button{font-family:inherit; cursor:pointer;}
+  label{display:block; font-size:.85rem; font-weight:600; margin-bottom:4px; color:var(--pine-dark);}
+  input[type=text], input[type=number], select{
+    width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:4px; font-size:1rem; margin-bottom:14px; font-family:inherit;
+  }
   button.primary{
-    width:100%; background:var(--barn); color:#fff; border:none; padding:16px; border-radius:8px;
-    font-size:1.05rem; font-weight:700;
+    background:var(--barn); color:#fff; border:none; padding:12px 22px; border-radius:4px; font-size:1rem; font-weight:700;
+    cursor:pointer; font-family:inherit;
   }
-  button.primary:active{background:var(--barn-dark);}
+  button.primary:hover{background:var(--barn-dark);}
   button.secondary{
-    width:100%; background:none; border:2px solid var(--pine); color:var(--pine); padding:14px; border-radius:8px;
-    font-weight:700; font-size:1rem;
+    background:none; border:1px solid var(--pine); color:var(--pine); padding:10px 18px; border-radius:4px; font-weight:600; cursor:pointer; font-family:inherit;
   }
-  button.link{
-    width:100%; background:none; border:none; color:#8c6f5c; font-size:.85rem; text-decoration:underline; padding:10px;
+  button:disabled{opacity:.45; cursor:not-allowed;}
+  table{width:100%; border-collapse:collapse; font-size:.9rem;}
+  th,td{text-align:left; padding:8px 10px; border-bottom:1px solid var(--line);}
+  tbody tr:hover{background:#f5f0e4;}
+  th{color:var(--pine-dark); text-transform:uppercase; font-size:.72rem; letter-spacing:.06em;}
+  .qr-wrap{display:flex; justify-content:center; padding:16px; background:#fff;}
+  .pill{display:inline-block; padding:2px 9px; border-radius:20px; font-size:.72rem; font-weight:700; background:var(--pine); color:#fff;}
+  .muted{color:#726a5c; font-size:.85rem;}
+  .row{display:flex; gap:14px; flex-wrap:wrap;}
+  .row > div{flex:1; min-width:160px;}
+  .station-sheet{
+    border:3px solid var(--pine); border-radius:10px; padding:26px; margin-bottom:24px; text-align:center; background:#fff;
+    page-break-after:always;
   }
-  button:disabled{opacity:.4;}
-  #video-wrap{position:relative; max-width:100%; margin:0 0 12px;}
-  video{width:100%; border-radius:8px; border:2px solid var(--pine); display:block;}
-  .warn{background:#fdecea; border:1px solid #e0a39b; color:#7a2b22; padding:10px 14px; border-radius:6px; font-size:.85rem; margin-bottom:12px;}
-  .toast{
-    background:#eaf3ec; border:1px solid #a9c9b2; color:#234; padding:12px 14px; border-radius:8px; font-size:.92rem;
-    margin-bottom:14px; text-align:center; font-weight:600;
+  .station-sheet h2{font-size:2.6rem; color:var(--pine); margin-bottom:2px;}
+  .station-sheet .sub{color:var(--barn); font-weight:700; letter-spacing:.15em; text-transform:uppercase; font-size:.85rem; margin-bottom:18px;}
+  .calls{display:flex; justify-content:center; gap:14px; flex-wrap:wrap; margin-bottom:20px;}
+  .calls span{
+    display:inline-block; min-width:64px; padding:10px 6px; border:2px solid var(--tan); border-radius:8px;
+    font-family:'Roboto Slab',Georgia,serif; font-size:1.3rem; font-weight:700; color:var(--pine-dark);
   }
-  .progress-row{display:flex; gap:6px; justify-content:center; margin-bottom:6px;}
-  .progress-row .dot{
-    width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-    font-weight:700; font-size:.85rem; border:2px solid var(--line); color:#a89c86; background:#fbf8f2;
+  .station-sheet .qr-wrap{display:flex; justify-content:center;}
+  @media print{
+    header.top, nav.tabs, .ride-bar, .no-print{display:none !important;}
+    body{background:#fff;}
+    main{padding:0; max-width:none;}
+    section.panel{display:none !important;}
+    section.panel.printing{display:block !important;}
+    .station-sheet{margin:0; page-break-after:always;}
   }
-  .progress-row .dot.done{background:var(--ok); border-color:var(--ok); color:#fff;}
-  .progress-label{text-align:center; font-size:.8rem; color:#726a5c; margin-bottom:16px;}
-  select{
-    width:100%; padding:10px; border:1px solid var(--line); border-radius:6px; font-family:inherit; font-size:.95rem; margin-bottom:10px;
-  }
-  .card-name{font-family:'Roboto Slab',Georgia,serif; font-weight:700; color:var(--pine-dark); margin-bottom:6px; text-align:center;}
-  .letters{display:grid; grid-template-columns:repeat(5,1fr); gap:4px; max-width:300px; margin:0 auto 4px;}
-  .letters div{text-align:center; font-family:'Roboto Slab',Georgia,serif; color:var(--barn); font-weight:700;}
-  .bcard{display:grid; grid-template-columns:repeat(5,1fr); gap:4px; max-width:300px; margin:0 auto 20px;}
+  #video-wrap{position:relative; max-width:420px; margin:0 auto 14px;}
+  video{width:100%; border-radius:8px; border:2px solid var(--pine);}
+  .leaderboard-row.top{background:#fff7e6;}
+  .warn{background:#fdecea; border:1px solid #e0a39b; color:#7a2b22; padding:10px 14px; border-radius:6px; font-size:.88rem; margin-bottom:14px;}
+  .ok-box{background:#eaf3ec; border:1px solid #a9c9b2; color:#234; padding:10px 14px; border-radius:6px; font-size:.88rem; margin-bottom:14px;}
+  .bcard{display:inline-grid; grid-template-columns:repeat(5,42px); gap:3px; margin:10px auto;}
   .bcard div{
-    aspect-ratio:1; display:flex; align-items:center; justify-content:center; border:1px solid var(--line);
-    border-radius:4px; font-weight:700; font-size:.95rem; background:#fbf8f2;
+    width:42px; height:42px; display:flex; align-items:center; justify-content:center;
+    border:1px solid var(--line); font-size:.8rem; font-weight:700; border-radius:3px; background:#fbf8f2;
   }
   .bcard div.marked{background:var(--ok); color:#fff; border-color:var(--ok);}
-  .bcard div.free{background:var(--tan); color:#fff; font-size:.7rem;}
-  .finish-qr{display:flex; justify-content:center; padding:16px; background:#fff;}
+  .letters{display:grid; grid-template-columns:repeat(5,42px); gap:3px; margin:0 auto; justify-content:center;}
+  .letters div{width:42px; text-align:center; font-family:'Roboto Slab',Georgia,serif; color:var(--barn); font-weight:700;}
   #qrScratch{position:absolute; left:-9999px; top:-9999px;}
-  .rider-group{margin-bottom:26px;}
-  .rider-group:last-child{margin-bottom:0;}
-  .rider-group-name{
-    font-family:'Roboto Slab',Georgia,serif; font-weight:700; color:#fff; background:var(--pine);
-    padding:8px 12px; border-radius:6px; margin-bottom:14px; text-align:center;
+  #winCriteriaList li{margin-bottom:6px; display:flex; align-items:center; gap:8px;}
+  #winCriteriaList .pname{flex:1;}
+  #winCriteriaList button{
+    background:none; border:1px solid var(--line); border-radius:4px; width:26px; height:26px; cursor:pointer; font-size:.85rem;
   }
-  .rider-pick-btn{
-    display:block; width:100%; text-align:left; background:#fbf8f2; border:1px solid var(--line);
-    border-radius:8px; padding:14px; margin-bottom:10px; font-weight:700; color:var(--pine-dark); font-size:1rem;
+  #winCriteriaList button:hover{background:#f1ede2;}
+  .tab-btn{
+    background:#fbf8f2; border:1px solid var(--line); color:var(--pine-dark); padding:6px 12px; border-radius:20px;
+    font-size:.8rem; font-weight:600; cursor:pointer;
   }
-  .rider-pick-btn span{display:block; font-weight:400; font-size:.8rem; color:#726a5c; margin-top:2px;}
+  .tab-btn.active{background:var(--pine); color:#fff; border-color:var(--pine);}
 </style>
 </head>
 <body>
 
 <header class="top">
-  <h1>Bingo Ride</h1>
-  <div class="tag" id="headerTag">Rider</div>
+  <div>
+    <h1>Bingo Ride — Director</h1>
+    <div class="tag">Sign-in · Stations · Finish Line</div>
+  </div>
 </header>
 
-<main>
+<div class="ride-bar" id="rideBar"><!-- rendered by JS --></div>
 
-  <!-- ============ NO CARDS YET ============ -->
-  <div class="card" id="noCardsView">
-    <h2>Welcome!</h2>
-    <p>Scan the QR code from the sign-in table to load your Bingo card(s) onto this phone.</p>
-    <button class="primary" id="scanIssuanceBtn">Scan my card QR</button>
-  </div>
+<nav class="tabs no-print">
+  <button data-tab="signin" class="active">Sign-In</button>
+  <button data-tab="stations">Stations</button>
+  <button data-tab="finish">Finish Line</button>
+</nav>
 
-  <!-- ============ MAIN DASHBOARD ============ -->
-  <div id="mainView" style="display:none;">
-    <div class="card" style="text-align:center;">
-      <div class="muted" id="riderCountLabel"></div>
-      <div class="progress-row" id="progressDots"></div>
-      <div class="progress-label" id="progressLabel"></div>
-      <button class="primary" id="scanStationBtn">Scan station QR</button>
+<main id="mainEl">
+
+  <!-- ============ SIGN-IN ============ -->
+  <section class="panel active" id="panel-signin">
+    <div class="card">
+      <h2>Issue a rider's cards</h2>
+      <div class="row">
+        <div>
+          <label>Rider name</label>
+          <input type="text" id="riderName" placeholder="Sarah Jones">
+        </div>
+        <div>
+          <label>Number of cards (1–3)</label>
+          <select id="cardCount">
+            <option value="1">1 card — $5</option>
+            <option value="2">2 cards — $10</option>
+            <option value="3">3 cards — $15</option>
+          </select>
+        </div>
+      </div>
+      <button class="primary" id="issueBtn">Issue cards &amp; generate QR</button>
+      <p class="muted" id="issueHint">Card numbers are drawn at random and guaranteed unique for the whole ride.</p>
     </div>
 
-    <div class="card" id="cardsWrap"><!-- rendered by JS --></div>
-
-    <div class="card" style="text-align:center;">
-      <button class="secondary" id="addRiderBtn" style="margin-bottom:10px;">Add another rider's card</button>
-      <button class="secondary" id="showFinishBtn">Show finish-line code</button>
+    <div class="card" id="issuedCard" style="display:none;">
+      <h3 id="issuedTitle"></h3>
+      <div class="qr-wrap"><div id="issueQR"></div></div>
+      <p class="muted" style="text-align:center;">Rider scans this once with the Rider App to load her card(s).</p>
     </div>
 
-    <button class="link" id="startOverBtn">Start over (clear everyone's cards)</button>
-  </div>
+    <div class="card">
+      <h3>Roster</h3>
+      <table id="rosterTable">
+        <thead><tr><th>Rider</th><th>Cards</th><th>Paid</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="muted" id="rosterEmpty">No riders signed in yet.</p>
+    </div>
+  </section>
 
-  <!-- ============ SCANNER (shared by both scan buttons) ============ -->
-  <div class="card" id="scannerView" style="display:none;">
-    <div id="video-wrap">
-      <video id="scanVideo" muted playsinline></video>
-    </div>
-    <div id="cameraPickerWrap" style="display:none;">
-      <select id="cameraSelect"></select>
-    </div>
-    <div id="cameraError" class="warn" style="display:none;"></div>
-    <button class="secondary" id="cancelScanBtn">Cancel</button>
-  </div>
+  <!-- ============ STATIONS ============ -->
+  <section class="panel" id="panel-stations">
+    <div class="card no-print">
+      <h2>Trail station signs</h2>
+      <p class="muted">Generates 6 stations with unique, non-repeating calls spread evenly across B-I-N-G-O. Stations lock in for this ride once generated — end the ride to start a new set.</p>
 
-  <div id="toastWrap"></div>
+      <div class="row" id="callsPerStationRow">
+        <div>
+          <label>Calls per station</label>
+          <input type="number" id="callsPerStationInput" min="4" max="12" value="6">
+        </div>
+        <div>
+          <label>&nbsp;</label>
+          <p class="muted" id="callsPreview" style="margin-top:8px;"></p>
+        </div>
+      </div>
+      <p class="muted">Fewer calls per station makes patterns rarer (good for a big turnout, more cards in play). More calls per station raises everyone's odds (good for a small turnout). 12 is the practical maximum with 6 stations — beyond that you run out of fresh numbers to call.</p>
 
-  <!-- ============ FINISH CODE ============ -->
-  <div class="card" id="finishView" style="display:none;">
-    <div id="finishPicker">
-      <h2 style="text-align:center;">Whose finish code?</h2>
-      <div id="finishRiderList"></div>
+      <div id="stationWarn"></div>
+      <button class="primary" id="genStationsBtn">Generate 6 stations</button>
+      <div id="stationActions" style="display:none; margin-top:10px;">
+        <button class="secondary" id="printStationsBtn">Print all station signs</button>
+        <button class="secondary" id="pdfStationsBtn">Download station signs (PDF)</button>
+      </div>
     </div>
-    <div id="finishQRSection" style="display:none;">
-      <h2 style="text-align:center;">Show this at the finish line</h2>
-      <div class="finish-qr" id="finishQR"></div>
-      <p class="muted" style="text-align:center;">Hold steady while the finish-line volunteer scans this.</p>
-      <button class="secondary" id="backToPickerBtn" style="margin-bottom:10px;">Choose another rider</button>
+    <div id="stationSheets"></div>
+  </section>
+
+  <!-- ============ FINISH LINE ============ -->
+  <section class="panel" id="panel-finish">
+    <div class="finish-grid">
+      <div class="finish-left">
+
+        <div class="card no-print">
+          <h2>Scan a rider's finish code</h2>
+          <div id="video-wrap">
+            <video id="finishVideo" muted playsinline></video>
+          </div>
+          <div style="text-align:center;">
+            <button class="secondary" id="toggleScanBtn">Start camera</button>
+          </div>
+          <div id="scanConfirm" class="ok-box" style="display:none; text-align:center; font-weight:700; margin-top:12px;"></div>
+          <div style="text-align:center; margin-top:10px; display:none;" id="cameraPickerWrap">
+            <label style="display:inline; margin-right:6px;">Camera:</label>
+            <select id="cameraSelect" style="width:auto; display:inline-block; margin-bottom:0;"></select>
+          </div>
+          <div id="cameraError" class="warn" style="display:none; margin-top:12px;"></div>
+          <details style="margin-top:14px;">
+            <summary class="muted">Manual entry (camera unavailable)</summary>
+            <div class="row" style="margin-top:10px;">
+              <div>
+                <label>Card ID</label>
+                <select id="manualCardId"></select>
+              </div>
+            </div>
+            <label>Stations visited</label>
+            <div class="row" id="manualStations"></div>
+            <button class="secondary" id="manualSubmit">Add result</button>
+          </details>
+        </div>
+
+        <div class="card" id="lastScanCard" style="display:none;">
+          <h3 id="lastScanTitle"></h3>
+          <div id="lastScanTabs" style="display:flex; gap:6px; justify-content:center; margin-bottom:10px; flex-wrap:wrap;"></div>
+          <div class="bcard-wrap" style="text-align:center;">
+            <div class="letters"><div>B</div><div>I</div><div>N</div><div>G</div><div>O</div></div>
+            <div class="bcard" id="lastScanGrid"></div>
+          </div>
+          <p class="muted" id="lastScanCount" style="text-align:center;"></p>
+          <p class="muted" style="text-align:center;">Tip: click any row in the leaderboard below to compare that rider's card here.</p>
+        </div>
+
+        <div class="card">
+          <h3>Winner criteria</h3>
+          <p class="muted">Click patterns in the gallery to the right to add them here, in priority order. The leaderboard checks each in order and uses the first one anyone has achieved. Change this any time, even mid-ride. "Most squares filled" is always the guaranteed final fallback.</p>
+          <ol id="winCriteriaList" style="padding-left:6px; margin:0 0 6px; list-style:none;"></ol>
+          <p class="muted" id="winCriteriaEmpty">No patterns added — leaderboard will just use most squares filled.</p>
+        </div>
+
+        <div class="card">
+          <h3>Leaderboard</h3>
+          <p class="muted" id="winnerTierNote"></p>
+          <table>
+            <thead><tr><th>#</th><th>Rider</th><th>Card</th><th>Filled</th><th>Pattern</th></tr></thead>
+            <tbody id="leaderboardBody"></tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <div class="finish-right">
+        <div class="card">
+          <h3>Pattern reference</h3>
+          <p class="muted">Click a pattern to add it to the priority list. Patterns already added are checked off.</p>
+          <div id="patternGallery" class="pattern-gallery"></div>
+        </div>
+      </div>
+
     </div>
-    <button class="secondary" id="closeFinishBtn">Back</button>
-  </div>
+  </section>
 
 </main>
 
 <div id="qrScratch"></div>
+<input type="file" id="importFileInput" accept="application/json" style="display:none;">
 
 <script type="module">
-import * as BingoFormat from './bingo-format.js';
+import * as BingoFormat from '../bingo-format.js';
 
-const STORE_KEY = 'bingoRiderState_v1';
-const CAMERA_PREF_KEY = 'bingoRider_preferredCamera';
-
+const STORE_KEY = 'bingoRideDirector_v1';
 function defaultState(){
-  return { riders: [], visitedStations: {} }; // riders: [{riderName, cards:[...]}]
+  return {
+    ride: { name: '', startedAt: null },
+    cards: {},
+    roster: [],
+    stations: null,
+    nextCardIndex: 1,
+    results: [],
+    winCriteria: ['blackout', 'fourCorners', 'anyLine'],
+    callsPerStation: 6
+  };
 }
 function loadState(){
   try{
     const raw = localStorage.getItem(STORE_KEY);
-    if(raw) return JSON.parse(raw);
+    if(raw){
+      const data = JSON.parse(raw);
+      if(!data.winCriteria) data.winCriteria = ['blackout', 'fourCorners', 'anyLine']; // migrate older saves
+      if(!data.callsPerStation) data.callsPerStation = 6; // migrate older saves
+      return data;
+    }
   }catch(e){ console.error('Failed to load saved state', e); }
   return defaultState();
 }
 function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
 let state = loadState();
 
-function showToast(msg){
-  const wrap = document.getElementById('toastWrap');
-  wrap.innerHTML = `<div class="toast">${msg}</div>`;
-  setTimeout(()=>{ wrap.innerHTML=''; }, 3500);
+function todayLabel(){
+  return new Date().toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+}
+function safeFileName(s){
+  return (s || 'Bingo-Ride').trim().replace(/[^a-z0-9]+/gi,'-').replace(/^-+|-+$/g,'');
 }
 
-// ---------- MAIN RENDER ----------
-function renderAll(){
-  const hasRiders = state.riders.length > 0;
-  document.getElementById('noCardsView').style.display = hasRiders ? 'none' : 'block';
-  document.getElementById('mainView').style.display = hasRiders ? 'block' : 'none';
-  if(!hasRiders) return;
+// ---------- tabs ----------
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('section.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+    document.getElementById('mainEl').classList.toggle('wide', btn.dataset.tab==='finish');
+  });
+});
 
-  const totalCards = state.riders.reduce((sum,r)=>sum+r.cards.length, 0);
-  document.getElementById('riderCountLabel').textContent =
-    state.riders.length === 1
-      ? `${state.riders[0].riderName} — ${totalCards} card${totalCards>1?'s':''}`
-      : `${state.riders.length} riders on this phone — ${totalCards} cards total`;
+// ---------- RIDE BAR ----------
+function renderRideBar(){
+  const bar = document.getElementById('rideBar');
+  const locked = !!state.stations;
 
-  // progress dots (shared — one scan at a station covers every rider on this phone)
-  const visitedNums = Object.keys(state.visitedStations).map(Number);
-  const dotsWrap = document.getElementById('progressDots');
-  dotsWrap.innerHTML='';
-  for(let s=1; s<=6; s++){
-    const d = document.createElement('div');
-    d.className = 'dot' + (visitedNums.includes(s) ? ' done' : '');
-    d.textContent = s;
-    dotsWrap.appendChild(d);
-  }
-  document.getElementById('progressLabel').textContent = `${visitedNums.length} of 6 stations scanned`;
-
-  // cards, grouped by rider
-  const wrap = document.getElementById('cardsWrap');
-  wrap.innerHTML='';
-  const allStations = Object.values(state.visitedStations);
-  state.riders.forEach(rider=>{
-    const group = document.createElement('div');
-    group.className = 'rider-group';
-    const nameEl = document.createElement('div');
-    nameEl.className = 'rider-group-name';
-    nameEl.textContent = state.riders.length > 1 ? rider.riderName : '';
-    if(state.riders.length > 1) group.appendChild(nameEl);
-
-    rider.cards.forEach(card=>{
-      const { grid } = BingoFormat.markCard(card, visitedNums, allStations);
-      const section = document.createElement('div');
-      section.style.marginBottom = '22px';
-      section.innerHTML = `
-        <div class="card-name">${card.id}</div>
-        <div class="letters"><div>B</div><div>I</div><div>N</div><div>G</div><div>O</div></div>
-        <div class="bcard"></div>
-      `;
-      const bcardEl = section.querySelector('.bcard');
-      grid.forEach((row, rIdx)=>{
-        row.forEach((marked, cIdx)=>{
-          const cell = document.createElement('div');
-          const isFree = rIdx===2 && cIdx===2;
-          if(isFree){ cell.classList.add('free'); cell.textContent='FREE'; }
-          else if(marked) cell.classList.add('marked');
-          bcardEl.appendChild(cell);
-        });
-      });
-      group.appendChild(section);
+  if(!locked){
+    bar.innerHTML = `
+      <input type="text" id="rideNameInput" placeholder="Name this ride, e.g. August 5 Bingo Ride" value="${(state.ride.name||'').replace(/"/g,'&quot;')}">
+      <span class="muted" style="color:#cfd8d1;">Not locked yet — name it, then generate stations to lock it in.</span>
+      <button class="btn-tiny" id="loadRideBtn" style="margin-left:auto;">Load ride file…</button>
+    `;
+    document.getElementById('rideNameInput').addEventListener('input', (e)=>{
+      state.ride.name = e.target.value;
+      saveState();
     });
-    wrap.appendChild(group);
+  } else {
+    bar.innerHTML = `
+      <span class="ride-name">${state.ride.name || 'Untitled ride'}</span>
+      <span class="ride-date">started ${new Date(state.ride.startedAt).toLocaleDateString()}</span>
+      <button class="btn-tiny" id="exportRideBtn" style="margin-left:auto;">Export ride data (.json)</button>
+      <button class="btn-tiny" id="loadRideBtn">Load ride file…</button>
+      <button class="btn-tiny btn-danger" id="endRideBtn">End ride &amp; start new</button>
+    `;
+    document.getElementById('exportRideBtn').addEventListener('click', exportRideData);
+    document.getElementById('endRideBtn').addEventListener('click', endRide);
+  }
+  document.getElementById('loadRideBtn').addEventListener('click', ()=>{
+    document.getElementById('importFileInput').click();
   });
 }
 
-// ---------- SCANNING (shared logic for card QR and station QR) ----------
+function endRide(){
+  if(!confirm(`End "${state.ride.name || 'this ride'}" and permanently clear its stations, cards, roster, and results? This cannot be undone (export first if you want to keep a copy).`)) return;
+  state = defaultState();
+  saveState();
+  renderAll();
+}
+
+function exportRideData(){
+  const data = JSON.stringify(state, null, 2);
+  const blob = new Blob([data], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${safeFileName(state.ride.name)}-ride-data.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('importFileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const data = JSON.parse(reader.result);
+      if(!data.ride || !data.cards) throw new Error('Missing expected fields');
+      state = data;
+      saveState();
+      renderAll();
+      alert(`Loaded ride "${state.ride.name || 'Untitled'}".`);
+    }catch(err){
+      alert('That file doesn\'t look like a valid ride data file: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+function renderAll(){
+  renderRideBar();
+  renderRoster();
+  renderStations();
+  renderWinCriteria();
+  renderLeaderboard();
+  document.getElementById('issuedCard').style.display='none';
+  document.getElementById('lastScanCard').style.display='none';
+  document.getElementById('scanConfirm').style.display='none';
+  lastScanResults = [];
+  refreshManualUI();
+}
+
+// ---------- SIGN-IN ----------
+function showIssuedQR(name, cards, paid){
+  const payload = BingoFormat.encodeIssuance(name, cards);
+  document.getElementById('issuedTitle').textContent = `${name} — ${cards.length} card${cards.length>1?'s':''}${paid!=null?` ($${paid})`:''}`;
+  const qrEl = document.getElementById('issueQR');
+  qrEl.innerHTML='';
+  new QRCode(qrEl, { text: payload, width:220, height:220, correctLevel: QRCode.CorrectLevel.M });
+  document.getElementById('issuedCard').style.display='block';
+  document.getElementById('issuedCard').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function renderRoster(){
+  const tbody = document.querySelector('#rosterTable tbody');
+  tbody.innerHTML='';
+  document.getElementById('rosterEmpty').style.display = state.roster.length? 'none':'block';
+  state.roster.forEach(r=>{
+    const tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.title = "Click to show this rider's QR code again";
+    tr.innerHTML = `<td>${r.name}</td><td>${r.cardIds.join(', ')}</td><td>$${r.paid}</td>`;
+    tr.addEventListener('click', ()=>{
+      const cards = r.cardIds.map(id=>state.cards[id]).filter(Boolean);
+      if(!cards.length){ alert('Could not find this rider\'s cards.'); return; }
+      showIssuedQR(r.name, cards, r.paid);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+document.getElementById('issueBtn').addEventListener('click', ()=>{
+  const name = document.getElementById('riderName').value.trim();
+  const count = parseInt(document.getElementById('cardCount').value,10);
+  if(!name){ alert('Enter the rider\'s name.'); return; }
+
+  const cards = BingoFormat.generateUniqueCards(count, state.nextCardIndex);
+  state.nextCardIndex += count;
+  cards.forEach(c => state.cards[c.id] = c);
+  const paid = count*5;
+  state.roster.push({ name, cardIds: cards.map(c=>c.id), paid });
+  saveState();
+  renderRoster();
+  refreshManualUI();
+
+  showIssuedQR(name, cards, paid);
+
+  document.getElementById('riderName').value='';
+});
+
+// ---------- STATIONS ----------
+function updateCallsPreview(){
+  const n = parseInt(document.getElementById('callsPerStationInput').value, 10) || 6;
+  const total = n * 6;
+  document.getElementById('callsPreview').textContent =
+    `6 stations × ${n} calls = ${total} total (${Math.round(100*total/75)}% of all numbers)`;
+}
+document.getElementById('callsPerStationInput').addEventListener('input', ()=>{
+  let n = parseInt(document.getElementById('callsPerStationInput').value, 10) || 6;
+  n = Math.max(4, Math.min(12, n));
+  state.callsPerStation = n;
+  saveState();
+  updateCallsPreview();
+});
+
+function renderStations(){
+  const wrap = document.getElementById('stationSheets');
+  wrap.innerHTML='';
+  const warn = document.getElementById('stationWarn');
+  const genBtn = document.getElementById('genStationsBtn');
+  const actions = document.getElementById('stationActions');
+  const callsInput = document.getElementById('callsPerStationInput');
+
+  callsInput.value = state.callsPerStation;
+  callsInput.disabled = !!state.stations;
+  updateCallsPreview();
+
+  if(!state.stations){
+    warn.innerHTML='';
+    genBtn.style.display='inline-block';
+    actions.style.display='none';
+    return;
+  }
+
+  genBtn.style.display='none';
+  actions.style.display='block';
+  const totalCalls = state.stations.reduce((sum,s)=>sum+s.calls.length,0);
+  warn.innerHTML = `<div class="ok-box">Stations are locked for "${state.ride.name || 'this ride'}" — ${state.callsPerStation} calls per station (${totalCalls} total). Use "End ride &amp; start new" in the bar above to generate a different set.</div>`;
+
+  state.stations.forEach(st=>{
+    const payload = BingoFormat.encodeStation(st);
+    const div = document.createElement('div');
+    div.className='station-sheet';
+    div.innerHTML = `
+      <h2>Station ${st.station}</h2>
+      <div class="sub">${state.ride.name ? state.ride.name : 'Bingo Ride'} — Call Sheet</div>
+      <div class="calls">${st.calls.map(c=>`<span>${c.letter}${String(c.num).padStart(2,'0')}</span>`).join('')}</div>
+      <div class="qr-wrap"><div class="qrcell"></div></div>
+    `;
+    wrap.appendChild(div);
+    new QRCode(div.querySelector('.qrcell'), { text: payload, width:200, height:200, correctLevel: QRCode.CorrectLevel.M });
+  });
+}
+
+document.getElementById('genStationsBtn').addEventListener('click', ()=>{
+  if(!state.ride.name || !state.ride.name.trim()){
+    alert('Name this ride first (in the bar at the top) before generating stations.');
+    return;
+  }
+  state.ride.startedAt = new Date().toISOString();
+  state.stations = BingoFormat.generateStations(6, state.callsPerStation);
+  saveState();
+  renderRideBar();
+  renderStations();
+});
+
+document.getElementById('printStationsBtn').addEventListener('click', ()=>{
+  document.getElementById('panel-stations').classList.add('printing');
+  window.print();
+  setTimeout(()=>document.getElementById('panel-stations').classList.remove('printing'), 500);
+});
+
+// ---------- STATIONS PDF ----------
+function qrPngDataUrl(text, size){
+  const scratch = document.getElementById('qrScratch');
+  scratch.innerHTML = '';
+  new QRCode(scratch, { text, width:size, height:size, correctLevel: QRCode.CorrectLevel.M });
+  const canvas = scratch.querySelector('canvas');
+  return canvas ? canvas.toDataURL('image/png') : null;
+}
+
+document.getElementById('pdfStationsBtn').addEventListener('click', ()=>{
+  if(!state.stations) return;
+  try{
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit:'in', format:'letter' });
+    const pageW = 8.5, pageH = 11;
+
+    // Printed area constrained to 5in x 7.5in, centered on the letter page,
+    // to fit inside the trail-sign frames.
+    const boxW = 5, boxH = 7.5;
+    const x0 = (pageW - boxW) / 2;
+    const y0 = (pageH - boxH) / 2;
+    const cx = pageW / 2;
+
+    state.stations.forEach((st,i)=>{
+      if(i>0) doc.addPage();
+
+      doc.setDrawColor(31,58,46);
+      doc.setLineWidth(0.04);
+      doc.rect(x0, y0, boxW, boxH);
+
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(32);
+      doc.setTextColor(31,58,46);
+      doc.text(`Station ${st.station}`, cx, y0+0.9, { align:'center' });
+
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(11);
+      doc.setTextColor(140,59,46);
+      doc.text(`${(state.ride.name || 'BINGO RIDE').toUpperCase()} — CALL SHEET`, cx, y0+1.3, { align:'center' });
+
+      doc.setFont('courier','bold');
+      const calls = st.calls.map(c=>`${c.letter}${String(c.num).padStart(2,'0')}`);
+      const perRow = calls.length <= 6 ? 3 : 4;
+      const rows = [];
+      for(let i=0;i<calls.length;i+=perRow) rows.push(calls.slice(i,i+perRow).join('   '));
+      const fontSize = calls.length <= 8 ? 17 : 14;
+      const lineHeight = 0.42;
+      doc.setFontSize(fontSize);
+      doc.setTextColor(42,38,33);
+      const callsStartY = y0+2.1;
+      rows.forEach((rowText,i)=> doc.text(rowText, cx, callsStartY + i*lineHeight, { align:'center' }));
+
+      const qrSize = 3.3;
+      const qrY = callsStartY + rows.length*lineHeight + 0.3;
+      const qrUrl = qrPngDataUrl(BingoFormat.encodeStation(st), 500);
+      if(qrUrl) doc.addImage(qrUrl, 'PNG', cx-qrSize/2, qrY, qrSize, qrSize);
+
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(9);
+      doc.setTextColor(114,106,92);
+      doc.text(`${state.ride.name || 'Bingo Ride'}`, cx, y0+boxH-0.4, { align:'center' });
+    });
+
+    doc.save(`${safeFileName(state.ride.name)}-Stations.pdf`);
+  }catch(err){
+    console.error(err);
+    alert('Could not build the PDF: ' + err.message);
+  }
+});
+
+// ---------- FINISH LINE ----------
 let scanner = null;
+let scanning = false;
 let QrScannerLib = null;
-let scanMode = null; // 'issuance' | 'station'
+let lastScanResults = []; // [{cardId, grid, filledCount}] for the most recently scanned rider
+let lastScanActiveIndex = 0;
+let lastScanPayload = null;
+let lastScanPayloadAt = 0;
+const CAMERA_PREF_KEY = 'bingoRideDirector_preferredCamera';
 
 function showCameraError(msg){
   const el = document.getElementById('cameraError');
@@ -259,40 +648,63 @@ function showCameraError(msg){
   el.textContent = msg;
 }
 
+let scanConfirmTimeout = null;
+function showScanConfirm(msg){
+  const el = document.getElementById('scanConfirm');
+  el.style.display = 'block';
+  el.textContent = msg;
+  clearTimeout(scanConfirmTimeout);
+  scanConfirmTimeout = setTimeout(()=>{ el.style.display='none'; }, 4000);
+}
+
 async function populateCameraPicker(){
   const wrap = document.getElementById('cameraPickerWrap');
   const sel = document.getElementById('cameraSelect');
   try{
-    const cameras = await QrScannerLib.listCameras(true);
-    if(cameras.length < 2){ wrap.style.display='none'; return; }
+    const cameras = await QrScannerLib.listCameras(true); // true = request labels
+    if(!cameras.length){ wrap.style.display='none'; return; }
+
     const saved = localStorage.getItem(CAMERA_PREF_KEY);
     sel.innerHTML = cameras.map(c=>`<option value="${c.id}">${c.label || 'Camera'}</option>`).join('');
     if(saved && cameras.some(c=>c.id===saved)) sel.value = saved;
     wrap.style.display = 'block';
   }catch(e){
+    console.warn('Could not list cameras', e);
     wrap.style.display='none';
   }
 }
+
 document.getElementById('cameraSelect').addEventListener('change', async (e)=>{
   localStorage.setItem(CAMERA_PREF_KEY, e.target.value);
-  if(scanner){
+  if(scanner && scanning){
     try{ await scanner.setCamera(e.target.value); }
     catch(err){ showCameraError('Could not switch camera: ' + err.message); }
   }
 });
 
-async function openScanner(mode){
-  scanMode = mode;
+document.getElementById('toggleScanBtn').addEventListener('click', async ()=>{
+  const btn = document.getElementById('toggleScanBtn');
   showCameraError(null);
-  document.getElementById('scannerView').style.display = 'block';
-  document.getElementById('mainView').style.display = 'none';
-  document.getElementById('noCardsView').style.display = 'none';
+
+  if(scanning){
+    // destroy() (not just stop()) removes the scan-region highlight overlay
+    // and fully releases the camera; we always build a fresh instance next time.
+    if(scanner){ scanner.destroy(); scanner = null; }
+    scanning = false;
+    btn.textContent = 'Start camera';
+    return;
+  }
+
+  if(!state.stations){ alert('Generate stations first.'); return; }
 
   try{
     if(!QrScannerLib){
       const mod = await import('https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner.min.js');
       QrScannerLib = mod.default;
     }
+
+    // qr-scanner needs its worker script served same-origin. Fetching it and
+    // wrapping it in a blob: URL satisfies that without us having to host a copy.
     if(!QrScannerLib.WORKER_PATH || !QrScannerLib.WORKER_PATH.startsWith('blob:')){
       const workerResp = await fetch('https://cdnjs.cloudflare.com/ajax/libs/qr-scanner/1.4.2/qr-scanner-worker.min.js');
       if(!workerResp.ok) throw new Error('Could not fetch the scanner worker script (are you online for this first load?)');
@@ -300,7 +712,7 @@ async function openScanner(mode){
       QrScannerLib.WORKER_PATH = URL.createObjectURL(workerBlob);
     }
 
-    const video = document.getElementById('scanVideo');
+    const video = document.getElementById('finishVideo');
     const savedCamera = localStorage.getItem(CAMERA_PREF_KEY);
     scanner = new QrScannerLib(
       video,
@@ -312,129 +724,271 @@ async function openScanner(mode){
       }
     );
     await scanner.start();
+    scanning = true;
+    btn.textContent = 'Stop camera';
     await populateCameraPicker();
   }catch(err){
     console.error('Camera start failed', err);
-    showCameraError('Camera failed to start: ' + (err && err.message ? err.message : err));
+    showCameraError('Camera failed to start: ' + (err && err.message ? err.message : err) + '. Use manual entry below instead.');
   }
-}
-
-function closeScanner(){
-  if(scanner){ scanner.destroy(); scanner = null; }
-  document.getElementById('scannerView').style.display = 'none';
-  renderAll();
-}
-
-document.getElementById('scanIssuanceBtn').addEventListener('click', ()=>openScanner('issuance'));
-document.getElementById('addRiderBtn').addEventListener('click', ()=>openScanner('issuance'));
-document.getElementById('scanStationBtn').addEventListener('click', ()=>openScanner('station'));
-document.getElementById('cancelScanBtn').addEventListener('click', closeScanner);
+});
 
 function handleScan(payload){
-  const tag = payload.split(/[;|]/)[0];
+  // Ignore repeat detections of the exact same code within 3 seconds — the
+  // same QR often stays in frame for several video frames in a row, and
+  // without this we'd re-process (and re-render) it dozens of times.
+  const now = Date.now();
+  if(payload === lastScanPayload && (now - lastScanPayloadAt) < 3000) return;
+  lastScanPayload = payload;
+  lastScanPayloadAt = now;
 
-  if(tag === 'BINGO1'){
-    try{
-      const data = BingoFormat.decodeIssuance(payload);
-      const newCardIds = data.cards.map(c=>c.id).sort().join(',');
-      const isDuplicate = state.riders.some(r =>
-        r.riderName === data.riderName && r.cards.map(c=>c.id).sort().join(',') === newCardIds
-      );
-      if(isDuplicate){
-        showCameraError(`${data.riderName}'s card(s) are already loaded on this phone.`);
-        return;
-      }
-      if(state.riders.length >= 4){
-        if(!confirm(`This phone already has ${state.riders.length} riders loaded. Add ${data.riderName} anyway?`)){
-          return;
-        }
-      }
-      state.riders.push({ riderName: data.riderName, cards: data.cards });
-      saveState();
-      closeScanner();
-      showToast(`Loaded ${data.cards.length} card${data.cards.length>1?'s':''} for ${data.riderName}!`);
-    }catch(e){
-      showCameraError('That didn\'t look like a card QR code. Try again.');
-    }
-    return;
-  }
-
-  if(tag === 'STA1'){
-    if(state.riders.length === 0){
-      showCameraError('Scan a rider\'s card QR first before scanning a station.');
-      return;
-    }
-    try{
-      const station = BingoFormat.decodeStation(payload);
-      state.visitedStations[station.station] = station;
-      saveState();
-      closeScanner();
-      showToast(`Station ${station.station} marked for everyone on this phone!`);
-    }catch(e){
-      showCameraError('That didn\'t look like a station QR code. Try again.');
-    }
-    return;
-  }
-
-  showCameraError('Unrecognized QR code. Make sure you\'re scanning a Bingo Ride code.');
-}
-
-// ---------- FINISH CODE ----------
-function openFinishView(){
-  document.getElementById('mainView').style.display = 'none';
-  document.getElementById('finishView').style.display = 'block';
-  if(state.riders.length === 1){
-    showFinishForRider(0);
-  } else {
-    showFinishPicker();
+  // Everything here is wrapped in try/catch so a single bad scan can never
+  // stop the camera from recognizing the next one.
+  try{
+    const fin = BingoFormat.decodeFinish(payload);
+    recordFinish(fin.riderName, fin.cardIds, fin.visitedStations);
+  }catch(e){
+    console.warn('Not a valid finish QR', e);
+    showCameraError('That didn\'t look like a finish-line QR code. Try again.');
   }
 }
 
-function showFinishPicker(){
-  document.getElementById('finishQRSection').style.display = 'none';
-  document.getElementById('finishPicker').style.display = 'block';
-  const list = document.getElementById('finishRiderList');
-  list.innerHTML = '';
-  state.riders.forEach((rider, idx)=>{
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'rider-pick-btn';
-    btn.innerHTML = `${rider.riderName}<span>${rider.cards.length} card${rider.cards.length>1?'s':''}</span>`;
-    btn.addEventListener('click', ()=>showFinishForRider(idx));
-    list.appendChild(btn);
+function recordFinish(riderName, cardIds, visitedStations){
+  try{
+    const riderResults = [];
+    cardIds.forEach(cardId=>{
+      const card = state.cards[cardId];
+      if(!card){ console.warn('Unknown card', cardId); return; }
+      const { grid, filledCount } = BingoFormat.markCard(card, visitedStations, state.stations);
+      state.results = state.results.filter(r=>r.cardId!==cardId);
+      const entry = { riderName, cardId, grid, filledCount };
+      state.results.push(entry);
+      riderResults.push(entry);
+    });
+    saveState();
+    if(riderResults.length){
+      showLastScan(riderName, riderResults);
+      showScanConfirm(`✓ Got ${riderName}! (${riderResults.length} card${riderResults.length>1?'s':''})`);
+    }
+    renderLeaderboard();
+  }catch(e){
+    console.error('Failed to record finish scan', e);
+    showCameraError('Something went wrong recording that scan: ' + e.message);
+  }
+}
+
+function showLastScan(riderName, results){
+  lastScanResults = results;
+  lastScanActiveIndex = 0;
+  document.getElementById('lastScanCard').style.display='block';
+  document.getElementById('lastScanTitle').textContent = riderName;
+  renderLastScanTabs();
+  renderLastScanGrid();
+}
+
+function showCardFromLeaderboard(riderName, cardId){
+  const riderResults = state.results.filter(r=>r.riderName===riderName);
+  if(!riderResults.length) return;
+  lastScanResults = riderResults;
+  lastScanActiveIndex = Math.max(0, riderResults.findIndex(r=>r.cardId===cardId));
+  document.getElementById('lastScanCard').style.display='block';
+  document.getElementById('lastScanTitle').textContent = riderName;
+  renderLastScanTabs();
+  renderLastScanGrid();
+  document.getElementById('lastScanCard').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function renderLastScanTabs(){
+  const tabsEl = document.getElementById('lastScanTabs');
+  tabsEl.innerHTML='';
+  if(lastScanResults.length < 2) return; // no need for tabs with just one card
+  lastScanResults.forEach((r,i)=>{
+    const b = document.createElement('button');
+    b.type='button';
+    b.className = 'tab-btn' + (i===lastScanActiveIndex ? ' active' : '');
+    b.textContent = r.cardId;
+    b.addEventListener('click', ()=>{
+      lastScanActiveIndex = i;
+      renderLastScanTabs();
+      renderLastScanGrid();
+    });
+    tabsEl.appendChild(b);
   });
 }
 
-function showFinishForRider(idx){
-  const rider = state.riders[idx];
-  const visitedNums = Object.keys(state.visitedStations).map(Number);
-  const payload = BingoFormat.encodeFinish(rider.riderName, rider.cards.map(c=>c.id), visitedNums);
-  const qrEl = document.getElementById('finishQR');
-  qrEl.innerHTML = '';
-  new QRCode(qrEl, { text: payload, width:260, height:260, correctLevel: QRCode.CorrectLevel.M });
-  document.getElementById('finishPicker').style.display = 'none';
-  document.getElementById('finishQRSection').style.display = 'block';
-  document.getElementById('backToPickerBtn').style.display = state.riders.length > 1 ? 'block' : 'none';
-  document.getElementById('headerTag').textContent = 'RIDER ' + rider.riderName.toUpperCase();
+function renderLastScanGrid(){
+  const { grid, filledCount, cardId } = lastScanResults[lastScanActiveIndex];
+  const gridEl = document.getElementById('lastScanGrid');
+  gridEl.innerHTML='';
+  grid.forEach(row=>{
+    row.forEach(marked=>{
+      const d = document.createElement('div');
+      if(marked) d.classList.add('marked');
+      gridEl.appendChild(d);
+    });
+  });
+  document.getElementById('lastScanCount').textContent = `${cardId} — ${filledCount} / 25 squares filled`;
 }
 
-document.getElementById('showFinishBtn').addEventListener('click', openFinishView);
-document.getElementById('backToPickerBtn').addEventListener('click', ()=>{
-  document.getElementById('headerTag').textContent = 'Rider';
-  showFinishPicker();
-});
-document.getElementById('closeFinishBtn').addEventListener('click', ()=>{
-  document.getElementById('headerTag').textContent = 'Rider';
-  document.getElementById('finishView').style.display = 'none';
-  renderAll();
-});
+// ---------- WINNER CRITERIA ----------
+function buildIconGrid(mask, className){
+  const wrap = document.createElement('div');
+  wrap.className = className;
+  for(let r=0;r<5;r++){
+    for(let c=0;c<5;c++){
+      const cell = document.createElement('div');
+      const isFree = r===2 && c===2;
+      if(isFree || (mask && mask[r] && mask[r][c])) cell.classList.add('on');
+      wrap.appendChild(cell);
+    }
+  }
+  return wrap;
+}
 
-// ---------- START OVER ----------
-document.getElementById('startOverBtn').addEventListener('click', ()=>{
-  if(!confirm('Clear every rider\'s cards and station progress on this phone? Everyone will need to rescan their card QR to continue.')) return;
-  state = defaultState();
+function renderWinCriteria(){
+  const list = document.getElementById('winCriteriaList');
+  list.innerHTML='';
+  document.getElementById('winCriteriaEmpty').style.display = state.winCriteria.length ? 'none' : 'block';
+  const all = BingoFormat.allPatterns();
+  state.winCriteria.forEach((key,i)=>{
+    const li = document.createElement('li');
+    li.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:6px;';
+    const def = all[key];
+    const iconEl = buildIconGrid(BingoFormat.getDisplayMask(key), 'icon-grid');
+    const span = document.createElement('span');
+    span.className = 'pname';
+    span.textContent = `${i+1}. ${def ? def.name : key}`;
+    li.appendChild(iconEl);
+    li.appendChild(span);
+    ['up','down','remove'].forEach(act=>{
+      const b = document.createElement('button');
+      b.type='button';
+      b.textContent = act==='up' ? '↑' : act==='down' ? '↓' : '×';
+      b.title = act==='up' ? 'Move up' : act==='down' ? 'Move down' : 'Remove';
+      b.addEventListener('click', ()=> act==='remove' ? removePattern(i) : movePattern(i, act==='up'?-1:1));
+      li.appendChild(b);
+    });
+    list.appendChild(li);
+  });
+  renderPatternGallery();
+}
+function movePattern(i, dir){
+  const j = i + dir;
+  if(j<0 || j>=state.winCriteria.length) return;
+  [state.winCriteria[i], state.winCriteria[j]] = [state.winCriteria[j], state.winCriteria[i]];
   saveState();
-  renderAll();
+  renderWinCriteria();
+  renderLeaderboard();
+}
+function removePattern(i){
+  state.winCriteria.splice(i,1);
+  saveState();
+  renderWinCriteria();
+  renderLeaderboard();
+}
+function addPattern(key){
+  if(!key || state.winCriteria.includes(key)) return;
+  state.winCriteria.push(key);
+  saveState();
+  renderWinCriteria();
+  renderLeaderboard();
+}
+
+function renderPatternGallery(){
+  const gallery = document.getElementById('patternGallery');
+  gallery.innerHTML = '';
+  const all = BingoFormat.allPatterns();
+  Object.keys(all).forEach(key=>{
+    const def = all[key];
+    const added = state.winCriteria.includes(key);
+    const tile = document.createElement('button');
+    tile.type = 'button';
+    tile.className = 'pattern-tile' + (added ? ' added' : '');
+    tile.title = added ? `${def.name} (already added)` : `Add ${def.name}`;
+    if(added){
+      const check = document.createElement('div');
+      check.className = 'tile-check';
+      check.textContent = '✓';
+      tile.appendChild(check);
+    }
+    tile.appendChild(buildIconGrid(BingoFormat.getDisplayMask(key), 'mini-grid'));
+    const label = document.createElement('div');
+    label.className = 'tile-label';
+    label.textContent = def.name;
+    tile.appendChild(label);
+    tile.addEventListener('click', ()=>addPattern(key));
+    gallery.appendChild(tile);
+  });
+}
+
+function bestTierIndex(grid){
+  for(let i=0;i<state.winCriteria.length;i++){
+    if(BingoFormat.matchesPattern(grid, state.winCriteria[i])) return i;
+  }
+  return state.winCriteria.length; // matches nothing on the list — lowest priority tier
+}
+
+function renderLeaderboard(){
+  const body = document.getElementById('leaderboardBody');
+  body.innerHTML='';
+  const sorted = [...state.results].sort((a,b)=>{
+    const ta = bestTierIndex(a.grid), tb = bestTierIndex(b.grid);
+    if(ta !== tb) return ta - tb;
+    return b.filledCount - a.filledCount;
+  });
+
+  if(!state.results.length){
+    document.getElementById('winnerTierNote').textContent = 'No finish-line scans yet.';
+    return;
+  }
+
+  const { winners, patternName } = BingoFormat.determineWinner(state.results, state.winCriteria);
+  const winnerIds = new Set(winners.map(w=>w.cardId));
+
+  document.getElementById('winnerTierNote').textContent =
+    `Current leading criteria: ${patternName}${winners.length>1?' — TIE, flag for manual club decision':''}`;
+
+  sorted.forEach((r,i)=>{
+    const tr = document.createElement('tr');
+    if(winnerIds.has(r.cardId)) tr.classList.add('leaderboard-row','top');
+    tr.style.cursor = 'pointer';
+    tr.title = "Click to view this rider's card above";
+    const matched = BingoFormat.matchedPatterns(r.grid).filter(k=>state.winCriteria.includes(k));
+    const best = state.winCriteria.find(k=>matched.includes(k));
+    const patternStr = best ? BingoFormat.allPatterns()[best].name : '—';
+    tr.innerHTML = `<td>${i+1}</td><td>${r.riderName}</td><td>${r.cardId}</td><td>${r.filledCount}/25</td><td>${patternStr}</td>`;
+    tr.addEventListener('click', ()=>showCardFromLeaderboard(r.riderName, r.cardId));
+    body.appendChild(tr);
+  });
+}
+
+// ---------- manual entry fallback ----------
+function refreshManualUI(){
+  const sel = document.getElementById('manualCardId');
+  sel.innerHTML = '<option value="">Select a card…</option>';
+  state.roster.forEach(r=>{
+    r.cardIds.forEach(id=>{
+      const opt = document.createElement('option');
+      opt.value = JSON.stringify({name:r.name, id});
+      opt.textContent = `${id} — ${r.name}`;
+      sel.appendChild(opt);
+    });
+  });
+  const stWrap = document.getElementById('manualStations');
+  stWrap.innerHTML='';
+  for(let s=1;s<=6;s++){
+    const lbl = document.createElement('label');
+    lbl.style.fontWeight='400';
+    lbl.innerHTML = `<input type="checkbox" value="${s}" style="width:auto;margin-right:4px;"> Station ${s}`;
+    stWrap.appendChild(lbl);
+  }
+}
+document.getElementById('manualSubmit').addEventListener('click', ()=>{
+  const sel = document.getElementById('manualCardId');
+  if(!sel.value){ alert('Select a card.'); return; }
+  const { name, id } = JSON.parse(sel.value);
+  const visited = [...document.querySelectorAll('#manualStations input:checked')].map(cb=>parseInt(cb.value,10));
+  recordFinish(name, [id], visited);
 });
 
 renderAll();
