@@ -389,8 +389,12 @@ function renderRideBar(){
 }
 
 function endRide(){
-  if(!confirm(`End "${state.ride.name || 'this ride'}" and permanently clear its stations, cards, roster, and results? This cannot be undone (export first if you want to keep a copy).`)) return;
+  if(!confirm(`End "${state.ride.name || 'this ride'}" and permanently clear its stations, cards, roster, and results? This cannot be undone (export first if you want to keep a copy). Your winner criteria and calls-per-station setting will carry over to the next ride.`)) return;
+  const keepCriteria = state.winCriteria;
+  const keepCallsPerStation = state.callsPerStation;
   state = defaultState();
+  state.winCriteria = keepCriteria;
+  state.callsPerStation = keepCallsPerStation;
   saveState();
   renderAll();
 }
@@ -755,6 +759,7 @@ function handleScan(payload){
   // stop the camera from recognizing the next one.
   try{
     const fin = BingoFormat.decodeFinish(payload);
+    showCameraError(null); // clear any stale error from an earlier bad scan
     recordFinish(fin.riderName, fin.cardIds, fin.visitedStations);
   }catch(e){
     console.warn('Not a valid finish QR', e);
