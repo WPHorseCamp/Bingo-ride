@@ -1,6 +1,6 @@
 {
-  "name": "Bingo Ride Rider",
-  "short_name": "BR Rider",
+  "name": "WP Bingo",
+  "short_name": "WP Bingo",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#f6f2e8",
