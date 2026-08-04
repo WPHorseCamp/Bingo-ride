@@ -223,7 +223,7 @@
       <div id="stationWarn"></div>
       <button class="primary" id="genStationsBtn">Generate 6 stations</button>
       <div id="stationActions" style="display:none; margin-top:10px;">
-        <button class="secondary" id="printStationsBtn">Print all station signs</button>
+        <button class="secondary" id="printStationsBtn">Print all station signs (opens PDF)</button>
         <button class="secondary" id="pdfStationsBtn">Download station signs (PDF)</button>
       </div>
     </div>
@@ -556,9 +556,11 @@ document.getElementById('genStationsBtn').addEventListener('click', ()=>{
 });
 
 document.getElementById('printStationsBtn').addEventListener('click', ()=>{
-  document.getElementById('panel-stations').classList.add('printing');
-  window.print();
-  setTimeout(()=>document.getElementById('panel-stations').classList.remove('printing'), 500);
+  const doc = buildStationsPdf();
+  if(!doc) return;
+  // Open the exact same PDF in a new tab so what prints always matches the download —
+  // one layout, two ways to use it.
+  window.open(doc.output('bloburl'), '_blank');
 });
 
 // ---------- STATIONS PDF ----------
@@ -570,8 +572,8 @@ function qrPngDataUrl(text, size){
   return canvas ? canvas.toDataURL('image/png') : null;
 }
 
-document.getElementById('pdfStationsBtn').addEventListener('click', ()=>{
-  if(!state.stations) return;
+function buildStationsPdf(){
+  if(!state.stations) return null;
   try{
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit:'in', format:'letter' });
@@ -624,11 +626,18 @@ document.getElementById('pdfStationsBtn').addEventListener('click', ()=>{
       doc.text(`${state.ride.name || 'Bingo Ride'}`, cx, y0+boxH-0.4, { align:'center' });
     });
 
-    doc.save(`${safeFileName(state.ride.name)}-Stations.pdf`);
+    return doc;
   }catch(err){
     console.error(err);
     alert('Could not build the PDF: ' + err.message);
+    return null;
   }
+}
+
+document.getElementById('pdfStationsBtn').addEventListener('click', ()=>{
+  const doc = buildStationsPdf();
+  if(!doc) return;
+  doc.save(`${safeFileName(state.ride.name)}-Stations.pdf`);
 });
 
 // ---------- FINISH LINE ----------
